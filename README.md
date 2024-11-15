@@ -30,7 +30,7 @@ return {
   },
   lazy = true,
   opts = {
-    wal_path = "/home/air/.cache/wal/colors.json",
+    wal_path = "path/to/colors.json",
   },
 }
 ```
