@@ -14,9 +14,23 @@ that the colorscheme does not support, and that you would like to see support
 for, please submit a pull request.
 
 ## TODO
-    1.  Get file watcher working
-    2.  Finalize color assignments
+1.  Get file watcher working
+2.  Finalize color assignments
 
 ## Future Improvements
-    1.  Asynchronous file watch + file read
-    2.  Add debug/error messages + logging
+1.  Asynchronous file watch + file read
+2.  Add debug/error messages + logging
+
+## Installation (lazy.nvim)
+```Lua
+return {
+  url = "https://www.github.com/arizzoni/wal.nvim",
+  dependencies = {
+    { url = "https://www.github.com/rktjmp/lush.nvim" },
+  },
+  lazy = true,
+  opts = {
+    wal_path = "/home/air/.cache/wal/colors.json",
+  },
+}
+```
