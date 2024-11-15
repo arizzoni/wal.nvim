@@ -14,7 +14,7 @@ that the colorscheme does not support, and that you would like to see support
 for, please submit a pull request.
 
 ## TODO
-1.  Get file watcher working
+1.  Get file watcher working _properly_
 2.  Finalize color assignments
 
 ## Future Improvements
