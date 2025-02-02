@@ -9,7 +9,25 @@ else
 	special = wal_colors.special
 end
 
+-- colors.color0 = '0'
+-- colors.color1 = '1'
+-- colors.color2 = '2'
+-- colors.color3 = '3'
+-- colors.color4 = '4'
+-- colors.color5 = '5'
+-- colors.color6 = '6'
+-- colors.color7 = '7'
+-- colors.color8 = '8'
+-- colors.color9 = '9'
+-- colors.color10 = '10'
+-- colors.color11 = '11'
+-- colors.color12 = '12'
+-- colors.color13 = '13'
+-- colors.color14 = '14'
+-- colors.color15 = '15'
+
 local function set_terminal_theme()
+	-- vim.notify("Setting terminal theme...")
 	if not colors then
 		return false
 	end
@@ -35,6 +53,7 @@ local function set_terminal_theme()
 end
 
 local function set_lualine_theme()
+	-- vim.notify("Setting lualine theme...")
 	if not colors or not special then
 		return false
 	end
@@ -99,11 +118,12 @@ local function set_lualine_theme()
 end
 
 local set_theme = lush(function(injected_functions)
-	set_lualine_theme()
+	-- set_lualine_theme()
 	set_terminal_theme()
 
 	local sym = injected_functions.sym
 	local spec = {
+		-- selene: allow(undefined_variable)
 		---@diagnostic disable: undefined-global
 		Normal({ fg = special.foreground, bg = special.background }),
 		Bold({ Normal, gui = "bold" }),
@@ -369,6 +389,7 @@ local set_theme = lush(function(injected_functions)
 		WhichKeyFloat({ bg = colors.color0 }),
 		WhichKeyValue({ fg = colors.color8 }),
 
+		-- selene: deny(undefined_variable)
 		---@diagnostic enable: undefined-global
 	}
 
