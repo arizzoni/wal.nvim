@@ -52,73 +52,7 @@ local function set_terminal_theme()
 	return true
 end
 
-local function set_lualine_theme()
-	-- vim.notify("Setting lualine theme...")
-	if not colors or not special then
-		return false
-	end
-
-	-- Normal Mode:
-	local normal_fg = special.foreground
-	local normal_bg = colors.color0
-
-	-- Insert Mode:
-	local insert_fg = special.foreground
-	local insert_bg = colors.color1
-
-	-- Visual Mode:
-	local visual_fg = special.foreground
-	local visual_bg = colors.color2
-
-	-- Replace Mode:
-	local replace_fg = special.foreground
-	local replace_bg = colors.color3
-
-	-- Command Mode:
-	local command_fg = special.foreground
-	local command_bg = colors.color4
-
-	-- Statusline:
-	local statusline_active_fg = special.foreground
-	local statusline_active_bg = special.background
-	local statusline_inactive_fg = special.foreground
-	local statusline_inactive_bg = special.background
-
-	local wal = {
-		visual = {
-			a = { fg = visual_fg, bg = visual_bg, gui = "bold" },
-			b = { fg = visual_fg, bg = colors.color0 },
-		},
-		replace = {
-			a = { fg = replace_fg, bg = replace_bg, gui = "bold" },
-			b = { fg = replace_fg, bg = colors.color0 },
-		},
-		command = {
-			a = { fg = command_fg, bg = command_bg, gui = "bold" },
-			b = { fg = command_fg, bg = colors.color0 },
-		},
-		inactive = {
-			a = { fg = statusline_inactive_fg, bg = statusline_inactive_bg },
-			b = { fg = statusline_inactive_fg, bg = statusline_inactive_bg },
-			c = { fg = statusline_inactive_fg, bg = statusline_inactive_bg },
-		},
-		normal = {
-			a = { fg = normal_fg, bg = normal_bg, gui = "bold" },
-			b = { fg = normal_fg, bg = colors.color0 },
-			c = { fg = statusline_active_fg, bg = statusline_active_bg },
-		},
-		insert = {
-			a = { fg = insert_fg, bg = insert_bg, gui = "bold" },
-			b = { fg = insert_fg, bg = colors.color0 },
-		},
-	}
-	require("lualine").setup({ options = { theme = wal } })
-
-	return true
-end
-
 local set_theme = lush(function(injected_functions)
-	-- set_lualine_theme()
 	set_terminal_theme()
 
 	local sym = injected_functions.sym
