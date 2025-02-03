@@ -1,4 +1,8 @@
 local FileWatcher = {}
+-- The general idea behind all of this code comes from https://github.com/rktjmp/fwatch.nvim. I reduced the size of the
+-- implementation slightly to better suit the application, but I did not truly understand what I was doing with libuv
+-- until I found rktjmp's implementation and played around with it. Big thanks to them for their work on the fwatch.nvim
+-- reference implementation at https://github.com/rktjmp/fwatch.nvim.
 
 FileWatcher.file_path = nil
 FileWatcher.callback = nil

@@ -4,8 +4,11 @@ Theme.path = nil
 Theme.colors = {}
 Theme.special = {}
 
+-- Have to check outside of the luv callback so we do it early.
+-- There is some potential for shenanigans here.
+Theme.termguicolors = vim.opt.termguicolors
+
 function Theme:load_colors(path)
-	vim.notify("Entering function wal.theme.load_colors()")
 	self.path = path
 	local fd = vim.uv.fs_open(self.path, "r", 438)
 	if fd then
@@ -16,50 +19,82 @@ function Theme:load_colors(path)
 			if raw_json then
 				local wal = vim.json.decode(raw_json)
 				if wal then
-					self.colors = self.wal_colors.colors
-					self.special = self.wal_colors.special
+					self.colors = wal.colors
 				else
-					vim.notify("  JSON Decode Error")
 					return false
 				end
 			else
-				vim.notify("  File Read Error")
 				return false
 			end
 		else
-			vim.notify("  File Stat Error")
 			return false
 		end
 	else
-		vim.notify("  File Open Error")
 		return false
 	end
-	return { self.colors, self.special }
+	return { self.colors }
 end
 
 function Theme:apply(path)
-	vim.notify("Entering function wal.theme.apply()")
 	if #self.colors == 0 or self.path ~= path then
 		self:load_colors(path)
 	end
 
 	local function set_hl(group, options)
-		vim.api.nvim_set_hl(0, group, options)
+		vim.schedule(function()
+			vim.api.nvim_set_hl(0, group, options)
+		end)
 		return true
+	end
+
+	if self.termguicolors then
+		vim.g.terminal_color_0 = self.colors.color0
+		vim.g.terminal_color_1 = self.colors.color1
+		vim.g.terminal_color_2 = self.colors.color2
+		vim.g.terminal_color_3 = self.colors.color3
+		vim.g.terminal_color_4 = self.colors.color4
+		vim.g.terminal_color_5 = self.colors.color5
+		vim.g.terminal_color_6 = self.colors.color6
+		vim.g.terminal_color_7 = self.colors.color7
+		vim.g.terminal_color_8 = self.colors.color8
+		vim.g.terminal_color_9 = self.colors.color9
+		vim.g.terminal_color_10 = self.colors.color10
+		vim.g.terminal_color_11 = self.colors.color11
+		vim.g.terminal_color_12 = self.colors.color12
+		vim.g.terminal_color_13 = self.colors.color13
+		vim.g.terminal_color_14 = self.colors.color14
+		vim.g.terminal_color_15 = self.colors.color15
+	else
+		vim.g.terminal_color_0 = 0
+		vim.g.terminal_color_1 = 1
+		vim.g.terminal_color_2 = 2
+		vim.g.terminal_color_3 = 3
+		vim.g.terminal_color_4 = 4
+		vim.g.terminal_color_5 = 5
+		vim.g.terminal_color_6 = 6
+		vim.g.terminal_color_7 = 7
+		vim.g.terminal_color_8 = 8
+		vim.g.terminal_color_9 = 9
+		vim.g.terminal_color_10 = 10
+		vim.g.terminal_color_11 = 11
+		vim.g.terminal_color_12 = 12
+		vim.g.terminal_color_13 = 13
+		vim.g.terminal_color_14 = 14
+		vim.g.terminal_color_15 = 15
 	end
 
 	set_hl("Comment", { italic = true, fg = self.colors.color5, ctermfg = 8 })
 	set_hl("ColorColumn", { fg = self.colors.color8, bg = self.colors.color8, ctermfg = 8, ctermbg = 8 })
 	set_hl("Conceal", { fg = self.colors.color0, ctermfg = 0 })
-	set_hl("Cursor", { fg = self.special.background, bg = self.special.foreground, ctermfg = 0, ctermbg = 15 })
+	set_hl("Cursor", { fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
 	set_hl("lCursor", { link = "Cursor" })
 	set_hl("CursorIM", { link = "Cursor" })
-	set_hl("CursorColumn", { fg = self.special.background, bg = self.special.background, ctermfg = 0, ctermbg = 0 })
-	set_hl("CursorLine", { fg = self.special.foreground, bg = self.special.background, ctermfg = 15, ctermbg = 0 })
+	set_hl("CursorColumn", { fg = self.colors.color0, bg = self.colors.color0, ctermfg = 0, ctermbg = 0 })
+	set_hl("CursorLine", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
 	set_hl("CursorLineNr", {
 		link = "CursorLine",
-		fg = self.special.background,
-		bg = self.special.foreground,
+		fg = self.colors.color0,
+		bg = self.colors.color15,
 		ctermfg = 0,
 		ctermbg = 15,
 		bold = true,
@@ -72,57 +107,48 @@ function Theme:apply(path)
 	set_hl("EndOfBuffer", { link = "Normal", bg = self.colors.color8, ctermbg = 8 })
 	set_hl("ErrorMsg", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("VertSplit", { fg = self.colors.color8, bg = self.colors.background, ctermfg = 8, ctermbg = 0 })
-	set_hl("WinSeparator", { fg = self.colors.color8, bg = self.special.background, ctermfg = 8, ctermbg = 0 })
-	set_hl("Folded", { fg = self.colors.color8, bg = self.special.background, ctermfg = 8, ctermbg = 0 })
-	set_hl("FoldColumn", { fg = self.colors.color8, bg = self.special.background, ctermfg = 8, ctermbg = 0 })
+	set_hl("WinSeparator", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
+	set_hl("Folded", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
+	set_hl("FoldColumn", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
 	set_hl("SignColumn", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("SignColumnSB", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("Substitute", { fg = self.colors.color9, bg = self.colors.color1, ctermfg = 9, ctermbg = 1 })
-	set_hl("LineNr", { fg = self.special.foreground, ctermfg = 15, bold = true })
+	set_hl("LineNr", { fg = self.colors.color15, ctermfg = 15, bold = true })
 	set_hl("LineNrAbove", { fg = self.colors.color8, ctermfg = 8, bold = true })
 	set_hl("LineNrBelow", { link = "LineNrAbove" })
-	set_hl(
-		"MatchParen",
-		{ bold = true, fg = self.special.background, bg = self.special.foreground, ctermfg = 0, ctermbg = 15 }
-	)
-	set_hl("ModeMsg", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("MsgArea", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("MoreMsg", { fg = self.special.foreground, ctermfg = 15 })
+	set_hl("MatchParen", { bold = true, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("ModeMsg", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("MsgArea", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("MoreMsg", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("NonText", { ctermfg = 8 })
-	set_hl("Normal", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("NormalNC", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("NormalSB", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("NormalFloat", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("Float", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl(
-		"FloatBorder",
-		{ bold = true, fg = self.special.foreground, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 }
-	)
-	set_hl(
-		"FloatTitle",
-		{ bold = true, fg = self.special.foreground, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 }
-	)
-	set_hl("Pmenu", { fg = self.special.foreground, bg = self.special.background, ctermfg = 15, ctermbg = 0 })
-	set_hl("PmenuMatch", { fg = self.special.foreground, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("Normal", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NormalNC", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NormalSB", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NormalFloat", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("Float", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("FloatBorder", { bold = true, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("FloatTitle", { bold = true, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("Pmenu", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("PmenuMatch", { fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
 	set_hl("PmenuSel", { link = "Normal", bold = true })
 	set_hl("PmenuMatchSel", { link = "PmenuSel", bg = self.colors.color8, ctermbg = 8 })
 	set_hl("PmenuSbar", { link = "PmenuSel" })
 	set_hl("PmenuThumb", { link = "Normal" })
-	set_hl("Question", { fg = self.colors.color9, bg = self.special.background, ctermfg = 9, ctermbg = 0 })
-	set_hl("QuickFixLine", { fg = self.colors.color10, bg = self.special.background, ctermfg = 10, ctermbg = 0 })
-	set_hl("Search", { fg = self.special.foreground, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
-	set_hl("IncSearch", { fg = self.special.foreground, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
+	set_hl("Question", { fg = self.colors.color9, bg = self.colors.color0, ctermfg = 9, ctermbg = 0 })
+	set_hl("QuickFixLine", { fg = self.colors.color10, bg = self.colors.color0, ctermfg = 10, ctermbg = 0 })
+	set_hl("Search", { fg = self.colors.color15, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
+	set_hl("IncSearch", { fg = self.colors.color15, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
 	set_hl("CurSearch", { link = "IncSearch" })
-	set_hl("SpecialKey", { fg = self.special.background, ctermfg = 0 })
+	set_hl("SpecialKey", { fg = self.colors.color0, ctermfg = 0 })
 	set_hl("SpellBad", { underline = true, fg = self.colors.color1, ctermfg = 1 })
 	set_hl("SpellCap", { underline = true, fg = self.colors.color2, ctermfg = 2 })
 	set_hl("SpellLocal", { underline = true, fg = self.colors.color3, ctermfg = 3 })
 	set_hl("SpellRare", { underline = true, fg = self.colors.color4, ctermfg = 4 })
-	set_hl("StatusLine", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("StatusLineNC", { fg = self.colors.color8, bg = self.special.background, ctermfg = 8, ctermbg = 0 })
+	set_hl("StatusLine", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("StatusLineNC", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
 	set_hl(
 		"StatusLineNormal",
-		{ bold = true, fg = self.special.foreground, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 }
+		{ bold = true, fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 }
 	)
 	set_hl("StatusLineInsert", { link = "StatusLineNormal", bg = self.colors.color2, ctermbg = 2 })
 	set_hl("StatusLineVisual", { link = "StatusLineNormal", bg = self.colors.color3, ctermbg = 3 })
@@ -130,34 +156,28 @@ function Theme:apply(path)
 	set_hl("StatusLineReplace", { link = "StatusLineNormal", bg = self.colors.color5, ctermbg = 5 })
 	set_hl("StatusLineSelect", { link = "StatusLineNormal", bg = self.colors.color6, ctermbg = 6 })
 	set_hl("StatusLineTerminal", { link = "StatuslineNormal", bg = self.colors.color8, ctermbg = 8 })
-	set_hl(
-		"StatusLineDiagnostics",
-		{ fg = self.special.foreground, bg = self.special.background, ctermfg = 15, ctermbg = 0 }
-	)
+	set_hl("StatusLineDiagnostics", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
 	set_hl("StatusLineFilepath", { fg = self.colors.color12, ctermfg = 12 })
 	set_hl("StatusLineLSP", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("StatusLineFileInfo", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("StatusLineModified", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("StatusLineVersionControl", { fg = self.colors.color5, ctermfg = 5 })
-	set_hl("StatusLineCursorPos", { fg = self.special.foreground, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 })
-	set_hl("TabLineCurrentTab", { fg = self.special.foreground, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 })
-	set_hl("TabLineTabs", { fg = self.special.foreground, bg = self.colors.color2, ctermfg = 15, ctermbg = 2 })
-	set_hl("TabLineCurrentBuf", { fg = self.special.foreground, bg = self.colors.color3, ctermfg = 15, ctermbg = 3 })
-	set_hl("TabLineBufs", { fg = self.special.foreground, bg = self.colors.color4, ctermfg = 15, ctermbg = 4 })
-	set_hl("TabLine", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("TabLineFill", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("TabLineSel", { fg = self.special.foreground, bg = self.special.background, ctermfg = 15, ctermbg = 0 })
-	set_hl(
-		"Title",
-		{ bold = true, fg = self.special.foreground, bg = self.special.background, ctermfg = 15, ctermbg = 0 }
-	)
-	set_hl("Visual", { fg = self.special.background, bg = self.special.foreground, ctermfg = 0, ctermbg = 15 })
-	set_hl("VisualNOS", { fg = self.special.background, bg = self.colors.color8, ctermfg = 0, ctermbg = 8 })
-	set_hl("WarningMsg", { fg = self.special.foreground, bg = self.colors.color12, ctermfg = 15, ctermbg = 12 })
-	set_hl("Whitespace", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("WildMenu", { fg = self.special.foreground, ctermfg = 15 })
-	set_hl("WinBar", { fg = self.special.foreground, bg = self.special.background, ctermfg = 15, ctermbg = 0 })
-	set_hl("WinBarNC", { fg = self.special.foreground, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("StatusLineCursorPos", { fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 })
+	set_hl("TabLineCurrentTab", { fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 })
+	set_hl("TabLineTabs", { fg = self.colors.color15, bg = self.colors.color2, ctermfg = 15, ctermbg = 2 })
+	set_hl("TabLineCurrentBuf", { fg = self.colors.color15, bg = self.colors.color3, ctermfg = 15, ctermbg = 3 })
+	set_hl("TabLineBufs", { fg = self.colors.color15, bg = self.colors.color4, ctermfg = 15, ctermbg = 4 })
+	set_hl("TabLine", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("TabLineFill", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("TabLineSel", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("Title", { bold = true, fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("Visual", { fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("VisualNOS", { fg = self.colors.color0, bg = self.colors.color8, ctermfg = 0, ctermbg = 8 })
+	set_hl("WarningMsg", { fg = self.colors.color15, bg = self.colors.color12, ctermfg = 15, ctermbg = 12 })
+	set_hl("Whitespace", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("WildMenu", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("WinBar", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("WinBarNC", { fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
 
 	set_hl("Array", { link = "Float" })
 	set_hl("Class", { link = "Structure" })
@@ -214,10 +234,7 @@ function Theme:apply(path)
 	set_hl("StorageClass", { fg = self.colors.color3, ctermfg = 3 })
 	set_hl("String", { italic = true, fg = self.colors.color4, ctermfg = 4 })
 	set_hl("Structure", { bold = true, fg = self.colors.color3, ctermfg = 3 })
-	set_hl(
-		"Todo",
-		{ bold = true, fg = self.special.background, bg = self.special.foreground, ctermfg = 0, ctermbg = 15 }
-	)
+	set_hl("Todo", { bold = true, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
 	set_hl("Type", { fg = self.colors.color13, ctermfg = 13 })
 	set_hl("Typedef", { fg = self.colors.color13, ctermfg = 13 })
 	set_hl("Underlined", { link = "Normal", underline = true })
@@ -266,7 +283,7 @@ function Theme:apply(path)
 	set_hl("GitSignsChange", { link = "DiffChange" })
 	set_hl("GitSignsDelete", { link = "DiffDelete" })
 
-	set_hl("IndentBlankLineChar", { fg = self.special.background, ctermfg = 0 })
+	set_hl("IndentBlankLineChar", { fg = self.colors.color0, ctermfg = 0 })
 	set_hl("IndentBlankLineContextChar", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("IblIndent", { link = "IndentBlankLineChar", nocombine = true })
 	set_hl("IblScope", { link = "IndentBlankLineContextChar", nocombine = true })
@@ -394,55 +411,48 @@ function Theme:apply(path)
 	set_hl("@variable.parameter", { link = "Variable" })
 	set_hl("@variable.parameter.builtin", { link = "Variable" })
 
-	local lsp_group = vim.api.nvim_create_augroup("LspGroup", { clear = false })
-	vim.api.nvim_create_autocmd("LspAttach", {
-		group = lsp_group,
-		pattern = "*",
-		callback = function()
-			set_hl("@lsp.type.boolean", { link = "@boolean" })
-			set_hl("@lsp.type.builtinType", { link = "@type.builtin" })
-			set_hl("@lsp.type.comment", { link = "@comment" })
-			set_hl("@lsp.type.decorator", { link = "@attribute" })
-			set_hl("@lsp.type.deriveHelper", { link = "@attribute" })
-			set_hl("@lsp.type.enum", { link = "@type" })
-			set_hl("@lsp.type.enumMember", { link = "@constant" })
-			set_hl("@lsp.type.escapeSequence", { link = "@string.escape" })
-			set_hl("@lsp.type.formatSpecifier", { link = "@markup.list" })
-			set_hl("@lsp.type.generic", { link = "@variable" })
-			set_hl("@lsp.type.interface", { link = "@attribute" })
-			set_hl("@lsp.type.keyword", { link = "@keyword" })
-			set_hl("@lsp.type.lifetime", { link = "@keyword.storage" })
-			set_hl("@lsp.type.namespace", { link = "@module" })
-			set_hl("@lsp.type.namespace.python", { link = "@variable" })
-			set_hl("@lsp.type.number", { link = "@number" })
-			set_hl("@lsp.type.operator", { link = "@operator" })
-			set_hl("@lsp.type.parameter", { link = "@variable.parameter" })
-			set_hl("@lsp.type.property", { link = "@property" })
-			set_hl("@lsp.type.selfKeyword", { link = "@variable.builtin" })
-			set_hl("@lsp.type.selfTypeKeyword", { link = "@variable.builtin" })
-			set_hl("@lsp.type.string", { link = "@string" })
-			set_hl("@lsp.type.typeAlias", { link = "@type.definition" })
-			set_hl("@lsp.type.unresolvedReference", { link = "@annotation" })
-			set_hl("@lsp.type.variable", { link = "@variable" })
-			set_hl("@lsp.typemod.class.defaultLibrary", { link = "@type.builtin" })
-			set_hl("@lsp.typemod.enum.defaultLibrary", { link = "@type.builtin" })
-			set_hl("@lsp.typemod.enumMember.defaultLibrary", { link = "@constant.builtin" })
-			set_hl("@lsp.typemod.function.defaultLibrary", { link = "@function.builtin" })
-			set_hl("@lsp.typemod.keyword.async", { link = "@keyword.coroutine" })
-			set_hl("@lsp.typemod.keyword.injected", { link = "@keyword" })
-			set_hl("@lsp.typemod.macro.defaultLibrary", { link = "@function.builtin" })
-			set_hl("@lsp.typemod.method.defaultLibrary", { link = "@function.builtin" })
-			set_hl("@lsp.typemod.operator.injected", { link = "@operator" })
-			set_hl("@lsp.typemod.string.injected", { link = "@string" })
-			set_hl("@lsp.typemod.struct.defaultLibrary", { link = "@type.builtin" })
-			set_hl("@lsp.typemod.type.defaultLibrary", { link = "@type.builtin" })
-			set_hl("@lsp.typemod.typeAlias.defaultLibrary", { link = "@type.builtin" })
-			set_hl("@lsp.typemod.variable.callable", { link = "@function" })
-			set_hl("@lsp.typemod.variable.defaultLibrary", { link = "@variable.builtin" })
-			set_hl("@lsp.typemod.variable.injected", { link = "@variable" })
-			set_hl("@lsp.typemod.variable.static", { link = "@constant" })
-		end,
-	})
+	set_hl("@lsp.type.boolean", { link = "@boolean" })
+	set_hl("@lsp.type.builtinType", { link = "@type.builtin" })
+	set_hl("@lsp.type.comment", { link = "@comment" })
+	set_hl("@lsp.type.decorator", { link = "@attribute" })
+	set_hl("@lsp.type.deriveHelper", { link = "@attribute" })
+	set_hl("@lsp.type.enum", { link = "@type" })
+	set_hl("@lsp.type.enumMember", { link = "@constant" })
+	set_hl("@lsp.type.escapeSequence", { link = "@string.escape" })
+	set_hl("@lsp.type.formatSpecifier", { link = "@markup.list" })
+	set_hl("@lsp.type.generic", { link = "@variable" })
+	set_hl("@lsp.type.interface", { link = "@attribute" })
+	set_hl("@lsp.type.keyword", { link = "@keyword" })
+	set_hl("@lsp.type.lifetime", { link = "@keyword.storage" })
+	set_hl("@lsp.type.namespace", { link = "@module" })
+	set_hl("@lsp.type.namespace.python", { link = "@variable" })
+	set_hl("@lsp.type.number", { link = "@number" })
+	set_hl("@lsp.type.operator", { link = "@operator" })
+	set_hl("@lsp.type.parameter", { link = "@variable.parameter" })
+	set_hl("@lsp.type.property", { link = "@property" })
+	set_hl("@lsp.type.selfKeyword", { link = "@variable.builtin" })
+	set_hl("@lsp.type.selfTypeKeyword", { link = "@variable.builtin" })
+	set_hl("@lsp.type.string", { link = "@string" })
+	set_hl("@lsp.type.typeAlias", { link = "@type.definition" })
+	set_hl("@lsp.type.unresolvedReference", { link = "@annotation" })
+	set_hl("@lsp.type.variable", { link = "@variable" })
+	set_hl("@lsp.typemod.class.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.enum.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.enumMember.defaultLibrary", { link = "@constant.builtin" })
+	set_hl("@lsp.typemod.function.defaultLibrary", { link = "@function.builtin" })
+	set_hl("@lsp.typemod.keyword.async", { link = "@keyword.coroutine" })
+	set_hl("@lsp.typemod.keyword.injected", { link = "@keyword" })
+	set_hl("@lsp.typemod.macro.defaultLibrary", { link = "@function.builtin" })
+	set_hl("@lsp.typemod.method.defaultLibrary", { link = "@function.builtin" })
+	set_hl("@lsp.typemod.operator.injected", { link = "@operator" })
+	set_hl("@lsp.typemod.string.injected", { link = "@string" })
+	set_hl("@lsp.typemod.struct.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.type.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.typeAlias.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.variable.callable", { link = "@function" })
+	set_hl("@lsp.typemod.variable.defaultLibrary", { link = "@variable.builtin" })
+	set_hl("@lsp.typemod.variable.injected", { link = "@variable" })
+	set_hl("@lsp.typemod.variable.static", { link = "@constant" })
 end
 
 return Theme
