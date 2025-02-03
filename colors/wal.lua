@@ -1,15 +1,22 @@
--- Neovim colorscheme file for wal.nvim
+local watch = require("wal.watch")
+local theme = require("wal.theme")
 
--- Set dark background for colorscheme
+vim.g.colors_name = "wal"
 vim.opt.background = "dark"
 
--- Set colorscheme Name
-vim.g.colors_name = "wal"
+if not vim.g.wal_path then
+	vim.g.wal_path = vim.fn.expand("~/.cache/wal/colors/json")
+end
 
--- Clear cache
-package.loaded["wal"] = nil
+theme:apply(vim.g.wal_path)
 
--- Apply the theme
-require("wal").setup()
+local file_watcher
+-- callback = function(err, filename, events)
+callback = function()
+	file_watcher:stop()
+	theme:apply(vim.g.wal_path)
+	file_watcher:start()
+end
 
--- vim: ts=2 sw=2 tw=120
+file_watcher = watch.new(vim.g.wal_path, callback, nil)
+file_watcher:start()

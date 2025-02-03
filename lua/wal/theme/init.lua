@@ -1,380 +1,458 @@
-local lush = require("lush")
-local wal_colors = require("wal").get_colors()
-local colors, special
+local Theme = {}
 
-if not wal_colors then
-	return
-else
-	colors = wal_colors.colors
-	special = wal_colors.special
-end
+Theme.path = nil
+Theme.colors = {}
+Theme.special = {}
 
-local function set_terminal_theme()
-	if not colors then
+-- Have to check outside of the luv callback so we do it early.
+-- There is some potential for shenanigans here.
+Theme.termguicolors = vim.opt.termguicolors
+
+function Theme:load_colors(path)
+	self.path = path
+	local fd = vim.uv.fs_open(self.path, "r", 438)
+	if fd then
+		local stat = vim.uv.fs_fstat(fd)
+		if stat then
+			local raw_json = vim.uv.fs_read(fd, stat.size, 0)
+			vim.uv.fs_close(fd)
+			if raw_json then
+				local wal = vim.json.decode(raw_json)
+				if wal then
+					self.colors = wal.colors
+				else
+					return false
+				end
+			else
+				return false
+			end
+		else
+			return false
+		end
+	else
 		return false
 	end
-
-	vim.g.terminal_color_0 = colors.color0
-	vim.g.terminal_color_1 = colors.color1
-	vim.g.terminal_color_2 = colors.color2
-	vim.g.terminal_color_3 = colors.color3
-	vim.g.terminal_color_4 = colors.color4
-	vim.g.terminal_color_5 = colors.color5
-	vim.g.terminal_color_6 = colors.color6
-	vim.g.terminal_color_7 = colors.color7
-	vim.g.terminal_color_8 = colors.color8
-	vim.g.terminal_color_9 = colors.color9
-	vim.g.terminal_color_10 = colors.color10
-	vim.g.terminal_color_11 = colors.color11
-	vim.g.terminal_color_12 = colors.color12
-	vim.g.terminal_color_13 = colors.color13
-	vim.g.terminal_color_14 = colors.color14
-	vim.g.terminal_color_15 = colors.color15
-
-	return true
+	return { self.colors }
 end
 
-local function set_lualine_theme()
-	if not colors or not special then
-		return false
+function Theme:apply(path)
+	if #self.colors == 0 or self.path ~= path then
+		self:load_colors(path)
 	end
 
-	-- Normal Mode:
-	local normal_fg = special.foreground
-	local normal_bg = colors.color0
+	local function set_hl(group, options)
+		vim.schedule(function()
+			vim.api.nvim_set_hl(0, group, options)
+		end)
+		return true
+	end
 
-	-- Insert Mode:
-	local insert_fg = special.foreground
-	local insert_bg = colors.color1
+	if self.termguicolors then
+		vim.g.terminal_color_0 = self.colors.color0
+		vim.g.terminal_color_1 = self.colors.color1
+		vim.g.terminal_color_2 = self.colors.color2
+		vim.g.terminal_color_3 = self.colors.color3
+		vim.g.terminal_color_4 = self.colors.color4
+		vim.g.terminal_color_5 = self.colors.color5
+		vim.g.terminal_color_6 = self.colors.color6
+		vim.g.terminal_color_7 = self.colors.color7
+		vim.g.terminal_color_8 = self.colors.color8
+		vim.g.terminal_color_9 = self.colors.color9
+		vim.g.terminal_color_10 = self.colors.color10
+		vim.g.terminal_color_11 = self.colors.color11
+		vim.g.terminal_color_12 = self.colors.color12
+		vim.g.terminal_color_13 = self.colors.color13
+		vim.g.terminal_color_14 = self.colors.color14
+		vim.g.terminal_color_15 = self.colors.color15
+	else
+		vim.g.terminal_color_0 = 0
+		vim.g.terminal_color_1 = 1
+		vim.g.terminal_color_2 = 2
+		vim.g.terminal_color_3 = 3
+		vim.g.terminal_color_4 = 4
+		vim.g.terminal_color_5 = 5
+		vim.g.terminal_color_6 = 6
+		vim.g.terminal_color_7 = 7
+		vim.g.terminal_color_8 = 8
+		vim.g.terminal_color_9 = 9
+		vim.g.terminal_color_10 = 10
+		vim.g.terminal_color_11 = 11
+		vim.g.terminal_color_12 = 12
+		vim.g.terminal_color_13 = 13
+		vim.g.terminal_color_14 = 14
+		vim.g.terminal_color_15 = 15
+	end
 
-	-- Visual Mode:
-	local visual_fg = special.foreground
-	local visual_bg = colors.color2
+	set_hl("Comment", { italic = true, fg = self.colors.color5, ctermfg = 8 })
+	set_hl("ColorColumn", { fg = self.colors.color8, bg = self.colors.color8, ctermfg = 8, ctermbg = 8 })
+	set_hl("Conceal", { fg = self.colors.color0, ctermfg = 0 })
+	set_hl("Cursor", { fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("lCursor", { link = "Cursor" })
+	set_hl("CursorIM", { link = "Cursor" })
+	set_hl("CursorColumn", { fg = self.colors.color0, bg = self.colors.color0, ctermfg = 0, ctermbg = 0 })
+	set_hl("CursorLine", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("CursorLineNr", {
+		link = "CursorLine",
+		fg = self.colors.color0,
+		bg = self.colors.color15,
+		ctermfg = 0,
+		ctermbg = 15,
+		bold = true,
+	})
+	set_hl("Directory", { fg = self.colors.color4, ctermfg = 4 })
+	set_hl("DiffAdd", { fg = self.colors.color1, ctermfg = 1 })
+	set_hl("DiffChange", { fg = self.colors.color2, ctermfg = 2 })
+	set_hl("DiffDelete", { fg = self.colors.color3, ctermfg = 3 })
+	set_hl("DiffText", { link = "Normal", bg = self.colors.color8, ctermbg = 8 })
+	set_hl("EndOfBuffer", { link = "Normal", bg = self.colors.color8, ctermbg = 8 })
+	set_hl("ErrorMsg", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("VertSplit", { fg = self.colors.color8, bg = self.colors.background, ctermfg = 8, ctermbg = 0 })
+	set_hl("WinSeparator", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
+	set_hl("Folded", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
+	set_hl("FoldColumn", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
+	set_hl("SignColumn", { fg = self.colors.color8, ctermfg = 8 })
+	set_hl("SignColumnSB", { fg = self.colors.color8, ctermfg = 8 })
+	set_hl("Substitute", { fg = self.colors.color9, bg = self.colors.color1, ctermfg = 9, ctermbg = 1 })
+	set_hl("LineNr", { fg = self.colors.color15, ctermfg = 15, bold = true })
+	set_hl("LineNrAbove", { fg = self.colors.color8, ctermfg = 8, bold = true })
+	set_hl("LineNrBelow", { link = "LineNrAbove" })
+	set_hl("MatchParen", { bold = true, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("ModeMsg", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("MsgArea", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("MoreMsg", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NonText", { ctermfg = 8 })
+	set_hl("Normal", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NormalNC", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NormalSB", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("NormalFloat", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("Float", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("FloatBorder", { bold = true, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("FloatTitle", { bold = true, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("Pmenu", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("PmenuMatch", { fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl("PmenuSel", { link = "Normal", bold = true })
+	set_hl("PmenuMatchSel", { link = "PmenuSel", bg = self.colors.color8, ctermbg = 8 })
+	set_hl("PmenuSbar", { link = "PmenuSel" })
+	set_hl("PmenuThumb", { link = "Normal" })
+	set_hl("Question", { fg = self.colors.color9, bg = self.colors.color0, ctermfg = 9, ctermbg = 0 })
+	set_hl("QuickFixLine", { fg = self.colors.color10, bg = self.colors.color0, ctermfg = 10, ctermbg = 0 })
+	set_hl("Search", { fg = self.colors.color15, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
+	set_hl("IncSearch", { fg = self.colors.color15, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
+	set_hl("CurSearch", { link = "IncSearch" })
+	set_hl("SpecialKey", { fg = self.colors.color0, ctermfg = 0 })
+	set_hl("SpellBad", { underline = true, fg = self.colors.color1, ctermfg = 1 })
+	set_hl("SpellCap", { underline = true, fg = self.colors.color2, ctermfg = 2 })
+	set_hl("SpellLocal", { underline = true, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("SpellRare", { underline = true, fg = self.colors.color4, ctermfg = 4 })
+	set_hl("StatusLine", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("StatusLineNC", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
+	set_hl(
+		"StatusLineNormal",
+		{ bold = true, fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 }
+	)
+	set_hl("StatusLineInsert", { link = "StatusLineNormal", bg = self.colors.color2, ctermbg = 2 })
+	set_hl("StatusLineVisual", { link = "StatusLineNormal", bg = self.colors.color3, ctermbg = 3 })
+	set_hl("StatusLineCommand", { link = "StatusLineNormal", bg = self.colors.color4, ctermbg = 4 })
+	set_hl("StatusLineReplace", { link = "StatusLineNormal", bg = self.colors.color5, ctermbg = 5 })
+	set_hl("StatusLineSelect", { link = "StatusLineNormal", bg = self.colors.color6, ctermbg = 6 })
+	set_hl("StatusLineTerminal", { link = "StatuslineNormal", bg = self.colors.color8, ctermbg = 8 })
+	set_hl("StatusLineDiagnostics", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("StatusLineFilepath", { fg = self.colors.color12, ctermfg = 12 })
+	set_hl("StatusLineLSP", { fg = self.colors.color8, ctermfg = 8 })
+	set_hl("StatusLineFileInfo", { fg = self.colors.color8, ctermfg = 8 })
+	set_hl("StatusLineModified", { fg = self.colors.color8, ctermfg = 8 })
+	set_hl("StatusLineVersionControl", { fg = self.colors.color5, ctermfg = 5 })
+	set_hl("StatusLineCursorPos", { fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 })
+	set_hl("TabLineCurrentTab", { fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 })
+	set_hl("TabLineTabs", { fg = self.colors.color15, bg = self.colors.color2, ctermfg = 15, ctermbg = 2 })
+	set_hl("TabLineCurrentBuf", { fg = self.colors.color15, bg = self.colors.color3, ctermfg = 15, ctermbg = 3 })
+	set_hl("TabLineBufs", { fg = self.colors.color15, bg = self.colors.color4, ctermfg = 15, ctermbg = 4 })
+	set_hl("TabLine", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("TabLineFill", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("TabLineSel", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("Title", { bold = true, fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("Visual", { fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("VisualNOS", { fg = self.colors.color0, bg = self.colors.color8, ctermfg = 0, ctermbg = 8 })
+	set_hl("WarningMsg", { fg = self.colors.color15, bg = self.colors.color12, ctermfg = 15, ctermbg = 12 })
+	set_hl("Whitespace", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("WildMenu", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("WinBar", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("WinBarNC", { fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
 
-	-- Replace Mode:
-	local replace_fg = special.foreground
-	local replace_bg = colors.color3
+	set_hl("Array", { link = "Float" })
+	set_hl("Class", { link = "Structure" })
+	set_hl("Color", { link = "Special" })
+	set_hl("Constructor", { link = "Function" })
+	set_hl("Enum", { link = "Constant" })
+	set_hl("EnumMember", { link = "Constant" })
+	set_hl("Event", { link = "Special" })
+	set_hl("Field", { link = "Variable" })
+	set_hl("File", { link = "Normal" })
+	set_hl("Folder", { link = "Directory" })
+	set_hl("Interface", { link = "Function" })
+	set_hl("Key", { link = "Variable" })
+	set_hl("Method", { link = "Function" })
+	set_hl("Module", { link = "Include" })
+	set_hl("Namespace", { link = "Include" })
+	set_hl("Null", { link = "Constant" })
+	set_hl("Number", { link = "Normal", ctermfg = 2 })
+	set_hl("Object", { link = "Constant" })
+	set_hl("Package", { link = "Include" })
+	set_hl("Reference", { link = "Special" })
+	set_hl("Snippet", { link = "Conceal" })
+	set_hl("Struct", { link = "Structure" })
+	set_hl("Unit", { link = "Structure" })
+	set_hl("Text", { link = "Normal" })
+	set_hl("TypeParameter", { link = "Type" })
+	set_hl("Variable", { fg = self.colors.color4, ctermfg = 4 })
+	set_hl("Value", { link = "String", italic = false })
 
-	-- Command Mode:
-	local command_fg = special.foreground
-	local command_bg = colors.color4
+	set_hl("Boolean", { bold = true, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("Bold", { link = "Normal", bold = true })
+	set_hl("Character", { italic = true, fg = self.colors.color12, ctermfg = 12 })
+	set_hl("Constant", { fg = self.colors.color5, ctermfg = 5 })
+	set_hl("Constructor", { fg = self.colors.color2, ctermfg = 2 })
+	set_hl("Debug", { bold = true, fg = self.colors.color5, ctermfg = 5 })
+	set_hl("Delimiter", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("Define", { bold = true, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("Error", { fg = self.colors.color9, ctermfg = 9 })
+	set_hl("Exception", { fg = self.colors.color9, ctermfg = 9 })
+	set_hl("Function", { bold = true, fg = self.colors.color2, ctermfg = 2 })
+	set_hl("Identifier", { fg = self.colors.color14, ctermfg = 14 })
+	set_hl("Italic", { link = "Normal", italic = true })
+	set_hl("Include", { bold = true, fg = self.colors.color10, ctermfg = 10 })
+	set_hl("Keyword", { bold = true, fg = self.colors.color2, ctermfg = 2 })
+	set_hl("Label", { fg = self.colors.color12, ctermfg = 12 })
+	set_hl("Macro", { fg = self.colors.color2, ctermfg = 2 })
+	set_hl("Operator", { link = "Normal", bold = true })
+	set_hl("PreProc", { fg = self.colors.color1, ctermfg = 1 })
+	set_hl("Property", { fg = self.colors.color13, ctermfg = 13 })
+	set_hl("Repeat", { bold = true, fg = self.colors.color10, ctermfg = 10 })
+	set_hl("SpecialChar", { bold = true, fg = self.colors.color12, ctermfg = 12 })
+	set_hl("Special", { fg = self.colors.color6, ctermfg = 6 })
+	set_hl("Statement", { fg = self.colors.color2, ctermfg = 2 })
+	set_hl("StorageClass", { fg = self.colors.color3, ctermfg = 3 })
+	set_hl("String", { italic = true, fg = self.colors.color4, ctermfg = 4 })
+	set_hl("Structure", { bold = true, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("Todo", { bold = true, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("Type", { fg = self.colors.color13, ctermfg = 13 })
+	set_hl("Typedef", { fg = self.colors.color13, ctermfg = 13 })
+	set_hl("Underlined", { link = "Normal", underline = true })
 
-	-- Statusline:
-	local statusline_active_fg = special.foreground
-	local statusline_active_bg = special.background
-	local statusline_inactive_fg = special.foreground
-	local statusline_inactive_bg = special.background
+	set_hl("DiagnosticError", { link = "Error" })
+	set_hl("DiagnosticWarn", { link = "WarningMsg" })
+	set_hl("DiagnosticInfo", { link = "Normal" })
+	set_hl("DiagnosticHint", { link = "Normal" })
+	set_hl("DiagnosticUnnecessary", { link = "WarningMsg" })
+	set_hl("DiagnosticVirtualTextError", { link = "DiagnosticError" })
+	set_hl("DiagnosticVirtualTextWarn", { link = "DiagnosticWarningMsg" })
+	set_hl("DiagnosticVirtualTextInfo", { link = "DiagnosticInfo" })
+	set_hl("DiagnosticVirtualTextHint", { link = "DiagnosticHint" })
+	set_hl("DiagnosticUnderlineError", { link = "DiagnosticError" })
+	set_hl("DiagnosticUnderlineWarn", { link = "DiagnosticWarningMsg" })
+	set_hl("DiagnosticUnderlineInfo", { link = "DiagnosticHint" })
+	set_hl("DiagnosticUnderlineHint", { link = "DiagnosticHint" })
 
-	local wal = {
-		visual = {
-			a = { fg = visual_fg, bg = visual_bg, gui = "bold" },
-			b = { fg = visual_fg, bg = colors.color0 },
-		},
-		replace = {
-			a = { fg = replace_fg, bg = replace_bg, gui = "bold" },
-			b = { fg = replace_fg, bg = colors.color0 },
-		},
-		command = {
-			a = { fg = command_fg, bg = command_bg, gui = "bold" },
-			b = { fg = command_fg, bg = colors.color0 },
-		},
-		inactive = {
-			a = { fg = statusline_inactive_fg, bg = statusline_inactive_bg },
-			b = { fg = statusline_inactive_fg, bg = statusline_inactive_bg },
-			c = { fg = statusline_inactive_fg, bg = statusline_inactive_bg },
-		},
-		normal = {
-			a = { fg = normal_fg, bg = normal_bg, gui = "bold" },
-			b = { fg = normal_fg, bg = colors.color0 },
-			c = { fg = statusline_active_fg, bg = statusline_active_bg },
-		},
-		insert = {
-			a = { fg = insert_fg, bg = insert_bg, gui = "bold" },
-			b = { fg = insert_fg, bg = colors.color0 },
-		},
-	}
-	require("lualine").setup({ options = { theme = wal } })
+	set_hl("healthError", { link = "Error" })
+	set_hl("healthSuccess", { link = "Normal" })
+	set_hl("healthWarning", { link = "WarningMsg" })
 
-	return true
+	set_hl("diffAdded", { link = "DiffAdd" })
+	set_hl("diffRemoved", { link = "DiffDelete" })
+	set_hl("diffChanged", { link = "DiffChange" })
+	set_hl("diffOldFile", { link = "DiffChange", italic = true })
+	set_hl("diffNewFile", { link = "DiffChange", bold = true })
+	set_hl("diffFile", { link = "Comment" })
+	set_hl("diffLine", { link = "Comment" })
+	set_hl("diffIndexLine", { link = "DiffChange", fg = self.colors.color4, ctermfg = 4 })
+	set_hl("helpExample", { link = "Comment" })
+
+	set_hl("CmpDocumentation", { link = "Float" })
+	set_hl("CmpDocumentation", { link = "FloatBorder" })
+	set_hl("CmpGhostText", { link = "Conceal" })
+	set_hl("CmpItemAbbr", { link = "Float" })
+	set_hl("CmpItemAbbrDeprecated", { link = "Float", strikethrough = true })
+	set_hl("CmpItemAbbrMatch", { link = "Float", bold = true })
+	set_hl("CmpItemAbbrMatchFuzzy", { link = "Float", bold = true })
+	set_hl("CmpItemKindDefault", { link = "Float" })
+	set_hl("CmpItemMenu", { link = "Float" })
+
+	set_hl("DapStoppedLine", { link = "WarningMsg" })
+
+	set_hl("GitSignsAdd", { link = "DiffAdd" })
+	set_hl("GitSignsChange", { link = "DiffChange" })
+	set_hl("GitSignsDelete", { link = "DiffDelete" })
+
+	set_hl("IndentBlankLineChar", { fg = self.colors.color0, ctermfg = 0 })
+	set_hl("IndentBlankLineContextChar", { fg = self.colors.color8, ctermfg = 8 })
+	set_hl("IblIndent", { link = "IndentBlankLineChar", nocombine = true })
+	set_hl("IblScope", { link = "IndentBlankLineContextChar", nocombine = true })
+
+	set_hl("LazyProgressDone", { link = "Float", bold = true })
+	set_hl("LazyProgressTodo", { link = "Float", bold = true })
+
+	set_hl("TreesitterContext", { link = "Comment" })
+	set_hl("TreesitterContextBottom", { link = "Comment" })
+	set_hl("TreesitterContextSeparator", { link = "Comment" })
+	set_hl("TreesitterContextLineNumber", { link = "Comment" })
+	set_hl("TreesitterContextLineNumberBottom", { link = "Comment" })
+
+	set_hl("WhichKey", { link = "Float" })
+	set_hl("WhichKeyGroup", { link = "Float" })
+	set_hl("WhichKeyDesc", { link = "Float" })
+	set_hl("WhichKeySeparator", { link = "Float" })
+	set_hl("WhichKeyNormal", { link = "Float" })
+	set_hl("WhichKeyValue", { link = "Float" })
+
+	set_hl("@annotation", { link = "PreProc" })
+	set_hl("@attribute", { link = "PreProc" })
+	set_hl("@boolean", { link = "Boolean" })
+	set_hl("@character", { link = "Character" })
+	set_hl("@character.printf", { link = "SpecialChar" })
+	set_hl("@character.special", { link = "SpecialChar" })
+	set_hl("@comment", { link = "Comment" })
+	set_hl("@constant", { link = "Constant" })
+	set_hl("@constant.builtin", { link = "Special" })
+	set_hl("@constant.macro", { link = "Define" })
+	set_hl("@constructor", { link = "Constructor" })
+	set_hl("@diff.delta", { link = "DiffChange" })
+	set_hl("@diff.minus", { link = "DiffDelete" })
+	set_hl("@diff.plus", { link = "DiffAdd" })
+	set_hl("@exception", { link = "Exception" })
+	set_hl("@field", { link = "String" })
+	set_hl("@function", { link = "Function" })
+	set_hl("@function.builtin", { link = "Special" })
+	set_hl("@function.call", { link = "Function" })
+	set_hl("@function.macro", { link = "Macro" })
+	set_hl("@function.method", { link = "Function" })
+	set_hl("@function.method.call", { link = "Function" })
+	set_hl("@keyword", { link = "Keyword" })
+	set_hl("@keyword.conditional", { link = "Conditional" })
+	set_hl("@keyword.coroutine", { link = "Keyword" })
+	set_hl("@keyword.debug", { link = "Debug" })
+	set_hl("@keyword.directive", { link = "PreProc" })
+	set_hl("@keyword.directive.define", { link = "Define" })
+	set_hl("@keyword.exception", { link = "Exception" })
+	set_hl("@keyword.function", { link = "Function" })
+	set_hl("@keyword.import", { link = "Include" })
+	set_hl("@keyword.operator", { link = "Operator" })
+	set_hl("@keyword.repeat", { link = "Repeat" })
+	set_hl("@keyword.return", { link = "Keyword" })
+	set_hl("@keyword.storage", { link = "StorageClass" })
+	set_hl("@label", { link = "Label" })
+	set_hl("@markup", { link = "Normal" })
+	set_hl("@markup.emphasis", { link = "Normal" })
+	set_hl("@markup.environment", { link = "Macro" })
+	set_hl("@markup.environment.name", { link = "Type" })
+	set_hl("@markup.heading", { link = "Title" })
+	set_hl("@markup.italic", { link = "Normal" })
+	set_hl("@markup.link", { link = "Special" })
+	set_hl("@markup.link.label", { link = "SpecialChar" })
+	set_hl("@markup.link.label.symbol", { link = "Identifier" })
+	set_hl("@markup.link.url", { link = "Underlined" })
+	set_hl("@markup.list", { link = "Function" })
+	set_hl("@markup.list.checked", { link = "Function" })
+	set_hl("@markup.list.markdown", { link = "PreProc" })
+	set_hl("@markup.list.unchecked", { link = "Macro" })
+	set_hl("@markup.math", { link = "Special" })
+	set_hl("@markup.raw", { link = "String" })
+	set_hl("@markup.raw.markdown_inline", { link = "String" })
+	set_hl("@markup.strikethrough", { link = "Normal" })
+	set_hl("@markup.strong", { link = "Normal" })
+	set_hl("@markup.underline", { link = "Normal" })
+	set_hl("@method", { link = "Function" })
+	set_hl("@module", { link = "Include" })
+	set_hl("@module.builtin", { link = "Include" })
+	set_hl("@namespace", { link = "Structure" })
+	set_hl("@namespace.builtin", { link = "Structure" })
+	set_hl("@none", {})
+	set_hl("@number", { link = "Number" })
+	set_hl("@number.float", { link = "Float" })
+	set_hl("@operator", { link = "Operator" })
+	set_hl("@preproc", { link = "PreProc" })
+	set_hl("@property", { link = "Property" })
+	set_hl("@punctuation.bracket", { link = "Normal" })
+	set_hl("@punctuation.delimiter", { link = "Normal" })
+	set_hl("@punctuation.special", { link = "Normal" })
+	set_hl("@punctuation.special.markdown", { link = "Normal" })
+	set_hl("@string", { link = "String" })
+	set_hl("@string.documentation", { link = "Normal" })
+	set_hl("@string.escape", { link = "String" })
+	set_hl("@string.regexp", { link = "String" })
+	set_hl("@symbol", { link = "Character" })
+	set_hl("@tag", { link = "Label" })
+	set_hl("@tag.attribute", { link = "Property" })
+	set_hl("@tag.delimiter", { link = "Property" })
+	set_hl("@text", { link = "Normal" })
+	set_hl("@text.bold", { link = "Bold" })
+	set_hl("@text.danger", { link = "Error" })
+	set_hl("@text.diff.add", { link = "DiffAdd" })
+	set_hl("@text.diff.delete", { link = "DiffDelete" })
+	set_hl("@text.emphasis", { link = "Italic" })
+	set_hl("@text.environment", { link = "Bold" })
+	set_hl("@text.environment.name", { link = "Bold" })
+	set_hl("@text.literal", { link = "Character" })
+	set_hl("@text.math", { link = "Float" })
+	set_hl("@text.note", { link = "Label" })
+	set_hl("@text.reference", { link = "Tag" })
+	set_hl("@text.strike", { link = "Normal" })
+	set_hl("@text.strong", { link = "Bold" })
+	set_hl("@text.title", { link = "Title" })
+	set_hl("@text.todo", { link = "Exception" })
+	set_hl("@text.underline", { link = "Underlined" })
+	set_hl("@text.uri", { link = "Underlined" })
+	set_hl("@type", { link = "Type" })
+	set_hl("@type.builtin", { link = "Type" })
+	set_hl("@type.definition", { link = "Typedef" })
+	set_hl("@type.qualifier", { link = "Keyword" })
+	set_hl("@variable", { link = "Variable" })
+	set_hl("@variable.builtin", { link = "Variable" })
+	set_hl("@variable.member", { link = "Variable" })
+	set_hl("@variable.parameter", { link = "Variable" })
+	set_hl("@variable.parameter.builtin", { link = "Variable" })
+
+	set_hl("@lsp.type.boolean", { link = "@boolean" })
+	set_hl("@lsp.type.builtinType", { link = "@type.builtin" })
+	set_hl("@lsp.type.comment", { link = "@comment" })
+	set_hl("@lsp.type.decorator", { link = "@attribute" })
+	set_hl("@lsp.type.deriveHelper", { link = "@attribute" })
+	set_hl("@lsp.type.enum", { link = "@type" })
+	set_hl("@lsp.type.enumMember", { link = "@constant" })
+	set_hl("@lsp.type.escapeSequence", { link = "@string.escape" })
+	set_hl("@lsp.type.formatSpecifier", { link = "@markup.list" })
+	set_hl("@lsp.type.generic", { link = "@variable" })
+	set_hl("@lsp.type.interface", { link = "@attribute" })
+	set_hl("@lsp.type.keyword", { link = "@keyword" })
+	set_hl("@lsp.type.lifetime", { link = "@keyword.storage" })
+	set_hl("@lsp.type.namespace", { link = "@module" })
+	set_hl("@lsp.type.namespace.python", { link = "@variable" })
+	set_hl("@lsp.type.number", { link = "@number" })
+	set_hl("@lsp.type.operator", { link = "@operator" })
+	set_hl("@lsp.type.parameter", { link = "@variable.parameter" })
+	set_hl("@lsp.type.property", { link = "@property" })
+	set_hl("@lsp.type.selfKeyword", { link = "@variable.builtin" })
+	set_hl("@lsp.type.selfTypeKeyword", { link = "@variable.builtin" })
+	set_hl("@lsp.type.string", { link = "@string" })
+	set_hl("@lsp.type.typeAlias", { link = "@type.definition" })
+	set_hl("@lsp.type.unresolvedReference", { link = "@annotation" })
+	set_hl("@lsp.type.variable", { link = "@variable" })
+	set_hl("@lsp.typemod.class.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.enum.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.enumMember.defaultLibrary", { link = "@constant.builtin" })
+	set_hl("@lsp.typemod.function.defaultLibrary", { link = "@function.builtin" })
+	set_hl("@lsp.typemod.keyword.async", { link = "@keyword.coroutine" })
+	set_hl("@lsp.typemod.keyword.injected", { link = "@keyword" })
+	set_hl("@lsp.typemod.macro.defaultLibrary", { link = "@function.builtin" })
+	set_hl("@lsp.typemod.method.defaultLibrary", { link = "@function.builtin" })
+	set_hl("@lsp.typemod.operator.injected", { link = "@operator" })
+	set_hl("@lsp.typemod.string.injected", { link = "@string" })
+	set_hl("@lsp.typemod.struct.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.type.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.typeAlias.defaultLibrary", { link = "@type.builtin" })
+	set_hl("@lsp.typemod.variable.callable", { link = "@function" })
+	set_hl("@lsp.typemod.variable.defaultLibrary", { link = "@variable.builtin" })
+	set_hl("@lsp.typemod.variable.injected", { link = "@variable" })
+	set_hl("@lsp.typemod.variable.static", { link = "@constant" })
 end
 
-local set_theme = lush(function(injected_functions)
-	set_lualine_theme()
-	set_terminal_theme()
-
-	local sym = injected_functions.sym
-	local spec = {
-		---@diagnostic disable: undefined-global
-		Normal({ fg = special.foreground, bg = special.background }),
-		Bold({ Normal, gui = "bold" }),
-		Italic({ Normal, gui = "italic" }),
-
-		Debug({ fg = colors.color1 }),
-		Directory({ fg = colors.color4 }),
-		Error({ fg = colors.color1, bg = colors.color15 }),
-		ErrorMsg({ fg = colors.color1, bg = special.background }),
-		Exception({ fg = colors.color1 }),
-		FoldColumn({ fg = colors.color4, bg = special.background }),
-		Folded({ fg = colors.color7, bg = colors.color15, gui = "italic" }),
-		IncSearch({ fg = colors.color15, bg = colors.color2 }),
-
-		VertSplit({ fg = colors.color7, bg = special.background }),
-		WinSeparator({ VertSplit }),
-
-		Macro({ fg = colors.color1 }),
-		MatchParen({ fg = special.foreground, bg = colors.color8 }),
-		ModeMsg({ fg = colors.color2 }),
-		MoreMsg({ fg = colors.color2 }),
-		Question({ fg = colors.color4 }),
-		Search({ fg = colors.color8, bg = colors.color3 }),
-		SpecialKey({ fg = colors.color8 }),
-		TooLong({ fg = colors.color1 }),
-		Underlined({ Normal, sp = Normal.fg, gui = "underlined" }),
-		Visual({ bg = colors.color7, fg = special.background }),
-		VisualNOS({ fg = colors.color1 }),
-		WarningMsg({ fg = colors.color1 }),
-		WildMenu({ fg = special.foreground, bg = colors.color4 }),
-		Title({ fg = colors.color4, gui = "bold" }),
-		Conceal({ fg = colors.color15, bg = special.background }),
-		Whitespace({ Conceal }),
-		Cursor({ fg = special.background, bg = colors.color14 }),
-		NonText({ fg = colors.color8 }),
-		EndOfBuffer({ fg = special.foreground, bg = special.background }),
-		SignColumn({ fg = colors.color7, bg = special.background }),
-		LineNr({ fg = colors.color8, bg = special.background }),
-		ColorColumn({ fg = colors.color7, bg = colors.color6 }),
-		CursorColumn({ fg = colors.color7 }),
-		CursorLine({ fg = colors.color15, gui = "None" }),
-		CursorLineNr({ fg = special.foreground, bg = special.background, gui = "bold" }),
-		PMenu({ fg = colors.color7, bg = colors.color15 }),
-		PMenuSel({ fg = special.foreground, bg = colors.color4 }),
-		PmenuSbar({ fg = colors.color7 }),
-		PmenuThumb({ fg = special.foreground }),
-		TabLine({ fg = colors.color8, bg = colors.color15 }),
-		TabLineFill({ fg = colors.color8, bg = colors.color15 }),
-		TabLineSel({ fg = colors.color2, bg = colors.color15 }),
-		helpExample({ fg = colors.color3 }),
-		helpCommand({ fg = colors.color3 }),
-
-		Boolean({ fg = colors.color2 }),
-		Character({ fg = colors.color1 }),
-		Comment({ fg = colors.color7, gui = "italic" }),
-		Conditional({ fg = colors.color5 }),
-		Constant({ fg = colors.color2 }),
-		Define({ fg = colors.color5 }),
-		Delimiter({ fg = colors.color6 }),
-		Float({ fg = colors.color2 }),
-		Function({ fg = colors.color4, gui = "bold" }),
-
-		Identifier({ fg = colors.color6 }),
-		Include({ fg = colors.color4 }),
-		Keyword({ fg = colors.color5, gui = "bold" }),
-
-		Label({ fg = colors.color3 }),
-		Number({ fg = colors.color2 }),
-		Operator({ fg = special.foreground }),
-		PreProc({ fg = colors.color3 }),
-		Repeat({ fg = colors.color3 }),
-		Special({ fg = colors.color6 }),
-		SpecialChar({ fg = colors.color6 }),
-		Statement({ fg = colors.color1 }),
-		StorageClass({ fg = colors.color3 }),
-		String({ fg = colors.color2, gui = "italic" }),
-		Structure({ fg = colors.color5 }),
-		Tag({ fg = colors.color3 }),
-		Todo({ fg = colors.color3, bg = colors.color15 }),
-		Type({ fg = colors.color3 }),
-		Typedef({ fg = colors.color3 }),
-
-		-- Spelling
-		SpellBad({ gui = "underline", fg = colors.color1, sp = colors.color1 }),
-		SpellLocal({ gui = "underline", fg = colors.color6, sp = colors.color6 }),
-		SpellCap({ gui = "underline", fg = colors.color3, sp = colors.color3 }),
-		SpellRare({ gui = "underline", fg = colors.color5, sp = colors.color5 }),
-
-		-- Statusline
-		StatusLine({ fg = colors.color7, bg = colors.color15 }),
-		StatusLineNC({ fg = colors.color7, bg = colors.color15 }),
-		StatusLineTerm({ fg = colors.color10, bg = colors.color2 }),
-		StatusLineTermNC({ fg = colors.color11, bg = colors.color15 }),
-		WinBar({ fg = colors.color7, bg = special.background }),
-		WinBarNC({ fg = colors.color7, bg = special.background }),
-		User({ Normal }),
-
-		-- Diff
-		DiffAdd({ fg = colors.color2, bg = colors.color15, gui = "bold" }),
-		DiffChange({ fg = colors.color8, bg = colors.color15 }),
-		DiffDelete({ fg = colors.color1, bg = colors.color15, gui = "bold" }),
-		DiffText({ fg = colors.color4, bg = colors.color15 }),
-		DiffFile({ fg = colors.color1, bg = special.background }),
-		DiffNewFile({ fg = colors.color2, bg = special.background }),
-		DiffLine({ fg = colors.color4, bg = special.background }),
-		DiffAdded({ DiffAdd }),
-		DiffRemoved({ DiffDelete }),
-		diffRemoved({ DiffDelete }),
-
-		-- Git
-		gitCommitOverflow({ fg = colors.color1 }),
-		gitCommitSummary({ fg = colors.color2 }),
-		GitSignsAdd({ fg = colors.color6 }),
-		GitSignsChange({ fg = colors.color3 }),
-		GitSignsDelete({ fg = colors.color1 }),
-
-		-- Indent Blankline
-		IndentBlanklineChar({ gui = "nocombine", fg = colors.color15 }),
-		IndentBlanklineContextChar({ gui = "nocombine", fg = colors.color7 }),
-		IndentBlanklineContextStart({ gui = "underline", sp = colors.color7 }),
-
-		-- Markdown
-		mkdCode({ fg = colors.color2 }),
-		mkdCodeBlock({ fg = colors.color2 }),
-		mkdHeadingDelimiter({ fg = colors.color4 }),
-		mkdH1({ fg = colors.color4, gui = "bold" }),
-		mkdH2({ fg = colors.color4, gui = "bold" }),
-		mkdItalic({ fg = colors.color5, gui = "italic" }),
-		mkdBold({ fg = colors.color3, gui = "bold" }),
-		mkdCodeDelimiter({ fg = colors.color6, gui = "italic" }),
-		mkdError({ fg = special.foreground, bg = special.background }),
-		markdownCode({ mkdCode }),
-		markdownCodeBlock({ mkdCodeBlock }),
-		markdownHeadingDelimiter({ mkdHeadingDelimiter }),
-		markdownH1({ mkdH1 }),
-		markdownH2({ mkdH2 }),
-		markdownItalic({ mkdItalic }),
-		markdownBold({ mkdBold }),
-		markdownCodeDelimiter({ mkdCodeDelimiter }),
-		markdownError({ mkdError }),
-
-		-- LSP Diagnostics
-		DiagnosticError({ fg = colors.color1 }),
-		DiagnosticWarn({ fg = colors.color3 }),
-		DiagnosticInfo({ fg = colors.color4 }),
-		DiagnosticHint({ fg = colors.color6 }),
-		DiagnosticUnderlineError({ DiagnosticError, sp = DiagnosticError.fg, gui = "underline" }),
-		DiagnosticUnderlineWarn({ DiagnosticWarn, sp = DiagnosticWarn.fg, gui = "underline" }),
-		DiagnosticUnderlineInfo({ DiagnosticInfo, sp = DiagnosticInfo.fg, gui = "underline" }),
-		DiagnosticUnderlineHint({ DiagnosticHint, sp = DiagnosticHint.fg, gui = "underline" }),
-		DiagnosticUnderlineOk({ Underlined }),
-		DiagnosticFloatingError({ DiagnosticError }),
-		DiagnosticFloatingWarn({ DiagnosticWarn }),
-		DiagnosticFloatingInfo({ DiagnosticInfo }),
-		DiagnosticFloatingHint({ DiagnosticHint }),
-		DiagnosticFloatingOk({ Normal }),
-		DiagnosticSignError({ DiagnosticError }),
-		DiagnosticSignWarn({ DiagnosticWarn }),
-		DiagnosticSignInfo({ DiagnosticInfo }),
-		DiagnosticSignHint({ DiagnosticHint }),
-		DiagnosticSignOk({ Normal }),
-
-		-- Neogit
-		NeogitBranch({ fg = colors.color1 }),
-		NeogitRemote({ fg = colors.color1 }),
-		NeogitHunkHeader({ bg = colors.color6, fg = colors.color7 }),
-		NeogitHunkHeaderHighlight({ bg = colors.color7, fg = colors.color6 }),
-		NeogitDiffContextHighlight({ bg = colors.color0, fg = colors.color8 }),
-		NeogitDiffDeleteHighlight({ fg = colors.color1, bg = colors.color0 }),
-		NeogitDiffAddHighlight({ fg = colors.color6, bg = colors.color0 }),
-
-		-- Nvim-cmp
-		CmpItemAbbr({ fg = colors.color8 }),
-		CmpItemAbbrDeprecated({ fg = colors.color8, gui = "strikethrough" }),
-		CmpItemAbbrMatch({ fg = colors.color8, gui = "bold" }),
-		CmpItemAbbrMatchFuzzy({ fg = colors.color8, gui = "bold" }),
-		CmpItemKind({ fg = colors.color6 }),
-		CmpItemMenu({ fg = colors.color7 }),
-
-		-- Telescope
-		TelescopeBorder({ fg = colors.color8 }),
-		TelescopePromptBorder({ fg = colors.color8 }),
-		TelescopeSelectionCaret({ fg = colors.color14 }),
-		TelescopeSelection({ fg = colors.color14, bg = colors.color15 }),
-		TelescopeMatching({ fg = colors.color11 }),
-		TelescopePromptCounter({ fg = colors.color4 }),
-		TelescopeMultiSelection({ fg = colors.color3, gui = "bold" }),
-
-		-- Treesitter
-		sym("@attribute")({ Identifier }),
-		sym("@boolean")({ Boolean }),
-		sym("@character")({ Character }),
-		sym("@character.special")({ SpecialChar }),
-		sym("@comment")({ Comment }),
-		sym("@conditional")({ Conditional }),
-		sym("@constant")({ Constant }),
-		sym("@constant.builtin")({ Constant }),
-		sym("@constant.macro")({ Macro }),
-		sym("@constructor")({ Function }),
-		sym("@debug")({ Debug }),
-		sym("@define")({ Define }),
-		sym("@exception")({ Exception }),
-		sym("@field")({ String }),
-		sym("@float")({ Float }),
-		sym("@function")({ Function }),
-		sym("@function.builtin")({ Function }),
-		sym("@function.macro")({ Macro }),
-		sym("@include")({ Include }),
-		sym("@keyword")({ Keyword }),
-		sym("@keyword.function")({ Function }),
-		sym("@keyword.operator")({ Operator }),
-		sym("@label")({ Label }),
-		sym("@method")({ Function }),
-		sym("@namespace")({ Structure }),
-		sym("@none")({ bg = "NONE", fg = "NONE" }),
-		sym("@number")({ Number }),
-		sym("@operator")({ Operator }),
-		sym("@parameter")({ Constant }),
-		sym("@preproc")({ PreProc }),
-		sym("@property")({ Identifier }),
-		sym("@punctuation.bracket")({ Normal }),
-		sym("@punctuation.delimiter")({ Delimiter }),
-		sym("@punctuation.special")({ Bold }),
-		sym("@repeat")({ Repeat }),
-		sym("@storageclass")({ StorageClass }),
-		sym("@string")({ String }),
-		sym("@string.escape")({ String }),
-		sym("@string.regex")({ String }),
-		sym("@string.special")({ Special }),
-		sym("@symbol")({ Character }),
-		sym("@tag")({ Tag }),
-		sym("@tag.attribute")({ Tag }),
-		sym("@tag.delimiter")({ Tag }),
-		sym("@text")({ Normal }),
-		sym("@text.bold")({ Bold }),
-		sym("@text.danger")({ Error }),
-		sym("@text.diff.add")({ DiffAdd }),
-		sym("@text.diff.delete")({ DiffDelete }),
-		sym("@text.emphasis")({ Italic }),
-		sym("@text.environment")({ Bold }),
-		sym("@text.environment.name")({ Bold }),
-		sym("@text.literal")({ Character }),
-		sym("@text.math")({ Float }),
-		sym("@text.note")({ Label }),
-		sym("@text.reference")({ Tag }),
-		sym("@text.strike")({ Normal, gui = "strikethrough" }),
-		sym("@text.title")({ Title }),
-		sym("@text.todo")({ Exception }),
-		sym("@text.underline")({ Underlined }),
-		sym("@text.uri")({ Underlined, fg = special.foreground, bg = colors.color15 }),
-		sym("@type")({ Type }),
-		sym("@type.builtin")({ Type }),
-		sym("@type.definition")({ Typedef }),
-		sym("@variable")({ Float }),
-		sym("@variable.builtin")({ Float }),
-
-		-- WhichKey
-		WhichKey({ fg = colors.color2 }),
-		WhichKeyGroup({ fg = colors.color6 }),
-		WhichKeyDesc({ fg = colors.color1 }),
-		WhichKeySeperator({ fg = colors.color8 }),
-		WhichKeySeparator({ fg = colors.color8 }),
-		WhichKeyFloat({ bg = colors.color0 }),
-		WhichKeyValue({ fg = colors.color8 }),
-
-		---@diagnostic enable: undefined-global
-	}
-
-	return spec
-end)
-
-return set_theme
-
--- vim: ts=2 sw=2 tw=120
+return Theme
