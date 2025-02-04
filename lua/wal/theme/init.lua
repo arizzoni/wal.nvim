@@ -1,15 +1,20 @@
 local Theme = {}
 
-Theme.path = nil
+Theme.path = vim.g.wal_path
+Theme.ns_id = 0
+Theme.termguicolors = false
 Theme.colors = {}
-Theme.special = {}
 
--- Have to check outside of the luv callback so we do it early.
--- There is some potential for shenanigans here.
-Theme.termguicolors = vim.opt.termguicolors
-
-function Theme:load_colors(path)
+function Theme.new(path)
+	local self = setmetatable({}, Theme)
+	self.__index = Theme
+	self.termguicolors = vim.opt.termguicolors
+	self.ns_id = vim.api.nvim_create_namespace("wal.nvim@" .. path)
 	self.path = path
+	return self
+end
+
+function Theme:load_colors()
 	local fd = vim.uv.fs_open(self.path, "r", 438)
 	if fd then
 		local stat = vim.uv.fs_fstat(fd)
@@ -21,71 +26,39 @@ function Theme:load_colors(path)
 				if wal then
 					self.colors = wal.colors
 				else
+					vim.notify("Wal.nvim Error: Could not decode json data in " .. self.path, vim.log.levels.ERROR)
 					return false
 				end
 			else
+				vim.notify("Wal.nvim Error: Could not close " .. self.path, vim.log.levels.ERROR)
 				return false
 			end
 		else
+			vim.notify("Wal.nvim Error: Could not read " .. self.path, vim.log.levels.ERROR)
 			return false
 		end
 	else
+		vim.notify("Wal.nvim Error: Could not open " .. self.path, vim.log.levels.ERROR)
 		return false
 	end
-	return self.colors
+	return true
 end
 
-function Theme:apply(path, opts)
-	if #self.colors == 0 or self.path ~= path then
-		self:load_colors(path)
+function Theme:generate()
+	if not self.colors.color15 then
+		self:load_colors()
 	end
 
-	local allow_bold = opts.bold or true
-	local allow_italic = opts.italic or true
-	local allow_underline = opts.underline or true
-	local allow_strikethrough = opts.strikethrough
+	local allow_bold = true
+	local allow_italic = true
+	local allow_underline = true
+	local allow_strikethrough = true
 
 	local function set_hl(group, options)
 		vim.schedule(function()
-			vim.api.nvim_set_hl(0, group, options)
+			vim.api.nvim_set_hl(self.ns_id, group, options)
 		end)
 		return true
-	end
-
-	if self.termguicolors then
-		vim.g.terminal_color_0 = self.colors.color0
-		vim.g.terminal_color_1 = self.colors.color1
-		vim.g.terminal_color_2 = self.colors.color2
-		vim.g.terminal_color_3 = self.colors.color3
-		vim.g.terminal_color_4 = self.colors.color4
-		vim.g.terminal_color_5 = self.colors.color5
-		vim.g.terminal_color_6 = self.colors.color6
-		vim.g.terminal_color_7 = self.colors.color7
-		vim.g.terminal_color_8 = self.colors.color8
-		vim.g.terminal_color_9 = self.colors.color9
-		vim.g.terminal_color_10 = self.colors.color10
-		vim.g.terminal_color_11 = self.colors.color11
-		vim.g.terminal_color_12 = self.colors.color12
-		vim.g.terminal_color_13 = self.colors.color13
-		vim.g.terminal_color_14 = self.colors.color14
-		vim.g.terminal_color_15 = self.colors.color15
-	else
-		vim.g.terminal_color_0 = 0
-		vim.g.terminal_color_1 = 1
-		vim.g.terminal_color_2 = 2
-		vim.g.terminal_color_3 = 3
-		vim.g.terminal_color_4 = 4
-		vim.g.terminal_color_5 = 5
-		vim.g.terminal_color_6 = 6
-		vim.g.terminal_color_7 = 7
-		vim.g.terminal_color_8 = 8
-		vim.g.terminal_color_9 = 9
-		vim.g.terminal_color_10 = 10
-		vim.g.terminal_color_11 = 11
-		vim.g.terminal_color_12 = 12
-		vim.g.terminal_color_13 = 13
-		vim.g.terminal_color_14 = 14
-		vim.g.terminal_color_15 = 15
 	end
 
 	set_hl("Comment", { italic = allow_italic, fg = self.colors.color5, ctermfg = 8 })
@@ -467,6 +440,57 @@ function Theme:apply(path, opts)
 	set_hl("@lsp.typemod.variable.defaultLibrary", { link = "@variable.builtin" })
 	set_hl("@lsp.typemod.variable.injected", { link = "@variable" })
 	set_hl("@lsp.typemod.variable.static", { link = "@constant" })
+end
+
+function Theme:apply(winnr)
+	vim.schedule(function()
+		if winnr then
+			vim.api.nvim_win_set_hl_ns(winnr, self.ns_id)
+		else
+			local wins = vim.api.nvim_list_wins()
+			for _, win in pairs(wins) do
+				vim.api.nvim_win_set_hl_ns(win, self.ns_id)
+			end
+		end
+	end)
+
+	if self.termguicolors then
+		vim.g.terminal_color_0 = 0
+		vim.g.terminal_color_1 = 1
+		vim.g.terminal_color_2 = 2
+		vim.g.terminal_color_3 = 3
+		vim.g.terminal_color_4 = 4
+		vim.g.terminal_color_5 = 5
+		vim.g.terminal_color_6 = 6
+		vim.g.terminal_color_7 = 7
+		vim.g.terminal_color_8 = 8
+		vim.g.terminal_color_9 = 9
+		vim.g.terminal_color_10 = 10
+		vim.g.terminal_color_11 = 11
+		vim.g.terminal_color_12 = 12
+		vim.g.terminal_color_13 = 13
+		vim.g.terminal_color_14 = 14
+		vim.g.terminal_color_15 = 15
+	else
+		vim.g.terminal_color_0 = self.colors.color0
+		vim.g.terminal_color_1 = self.colors.color1
+		vim.g.terminal_color_2 = self.colors.color2
+		vim.g.terminal_color_3 = self.colors.color3
+		vim.g.terminal_color_4 = self.colors.color4
+		vim.g.terminal_color_5 = self.colors.color5
+		vim.g.terminal_color_6 = self.colors.color6
+		vim.g.terminal_color_7 = self.colors.color7
+		vim.g.terminal_color_8 = self.colors.color8
+		vim.g.terminal_color_9 = self.colors.color9
+		vim.g.terminal_color_10 = self.colors.color10
+		vim.g.terminal_color_11 = self.colors.color11
+		vim.g.terminal_color_12 = self.colors.color12
+		vim.g.terminal_color_13 = self.colors.color13
+		vim.g.terminal_color_14 = self.colors.color14
+		vim.g.terminal_color_15 = self.colors.color15
+	end
+
+	return true
 end
 
 return Theme
