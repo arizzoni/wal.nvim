@@ -20,24 +20,33 @@ function FileWatcher.new(path, callback, opts)
 		self.flags = {}
 	end
 	self.event_handle = vim.uv.new_fs_event()
+	if not self.event_handle then
+		vim.notify("FileWatcher Error: Could not generate event handle.", vim.log.levels.ERROR)
+		return false
+	end
 	return self
 end
 
 function FileWatcher:stop()
-	vim.uv.fs_event_stop(self.event_handle)
+	if not vim.uv.fs_event_stop(self.event_handle) then
+		vim.notify("FileWatcher Error: Could not generate stop file watcher.", vim.log.levels.ERROR)
+		return false
+	end
 end
 
 function FileWatcher:start()
 	local event_callback = function(err, filename, events)
 		if err then
 			self:stop()
-			vim.notify("FileWatcher Error")
+			vim.notify("FileWatcher Error: " .. err, vim.log.levels.ERROR)
 		else
 			self:stop()
 			self.callback(err, filename, events)
 		end
 	end
-	vim.uv.fs_event_start(self.event_handle, self.path, self.flags, event_callback)
+	if not vim.uv.fs_event_start(self.event_handle, self.path, self.flags, event_callback) then
+		vim.notify("FileWatcher Error: Could not start file watcher.", vim.log.levels.ERROR)
+	end
 end
 
 return FileWatcher

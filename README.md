@@ -44,6 +44,4 @@ return {
 ```
 
 ## Todo
-- [ ] Add debug/error messages + logging
-- [ ] Asynchronous file watch + file read
 - [ ] Add more highlights, tune colors

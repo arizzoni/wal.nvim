@@ -32,13 +32,18 @@ function Theme:load_colors(path)
 	else
 		return false
 	end
-	return { self.colors }
+	return self.colors
 end
 
-function Theme:apply(path)
+function Theme:apply(path, opts)
 	if #self.colors == 0 or self.path ~= path then
 		self:load_colors(path)
 	end
+
+	local allow_bold = opts.bold or true
+	local allow_italic = opts.italic or true
+	local allow_underline = opts.underline or true
+	local allow_strikethrough = opts.strikethrough
 
 	local function set_hl(group, options)
 		vim.schedule(function()
@@ -83,7 +88,7 @@ function Theme:apply(path)
 		vim.g.terminal_color_15 = 15
 	end
 
-	set_hl("Comment", { italic = true, fg = self.colors.color5, ctermfg = 8 })
+	set_hl("Comment", { italic = allow_italic, fg = self.colors.color5, ctermfg = 8 })
 	set_hl("ColorColumn", { fg = self.colors.color8, bg = self.colors.color8, ctermfg = 8, ctermbg = 8 })
 	set_hl("Conceal", { fg = self.colors.color0, ctermfg = 0 })
 	set_hl("Cursor", { fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
@@ -97,7 +102,7 @@ function Theme:apply(path)
 		bg = self.colors.color15,
 		ctermfg = 0,
 		ctermbg = 15,
-		bold = true,
+		bold = allow_bold,
 	})
 	set_hl("Directory", { fg = self.colors.color4, ctermfg = 4 })
 	set_hl("DiffAdd", { fg = self.colors.color1, ctermfg = 1 })
@@ -113,10 +118,13 @@ function Theme:apply(path)
 	set_hl("SignColumn", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("SignColumnSB", { fg = self.colors.color8, ctermfg = 8 })
 	set_hl("Substitute", { fg = self.colors.color9, bg = self.colors.color1, ctermfg = 9, ctermbg = 1 })
-	set_hl("LineNr", { fg = self.colors.color15, ctermfg = 15, bold = true })
-	set_hl("LineNrAbove", { fg = self.colors.color8, ctermfg = 8, bold = true })
+	set_hl("LineNr", { fg = self.colors.color15, ctermfg = 15, bold = allow_bold })
+	set_hl("LineNrAbove", { fg = self.colors.color8, ctermfg = 8, bold = allow_bold })
 	set_hl("LineNrBelow", { link = "LineNrAbove" })
-	set_hl("MatchParen", { bold = true, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl(
+		"MatchParen",
+		{ bold = allow_bold, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 }
+	)
 	set_hl("ModeMsg", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("MsgArea", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("MoreMsg", { fg = self.colors.color15, ctermfg = 15 })
@@ -126,11 +134,17 @@ function Theme:apply(path)
 	set_hl("NormalSB", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("NormalFloat", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("Float", { fg = self.colors.color15, ctermfg = 15 })
-	set_hl("FloatBorder", { bold = true, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
-	set_hl("FloatTitle", { bold = true, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
+	set_hl(
+		"FloatBorder",
+		{ bold = allow_bold, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 }
+	)
+	set_hl(
+		"FloatTitle",
+		{ bold = allow_bold, fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 }
+	)
 	set_hl("Pmenu", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
 	set_hl("PmenuMatch", { fg = self.colors.color15, bg = self.colors.color8, ctermfg = 15, ctermbg = 8 })
-	set_hl("PmenuSel", { link = "Normal", bold = true })
+	set_hl("PmenuSel", { link = "Normal", bold = allow_bold })
 	set_hl("PmenuMatchSel", { link = "PmenuSel", bg = self.colors.color8, ctermbg = 8 })
 	set_hl("PmenuSbar", { link = "PmenuSel" })
 	set_hl("PmenuThumb", { link = "Normal" })
@@ -140,15 +154,15 @@ function Theme:apply(path)
 	set_hl("IncSearch", { fg = self.colors.color15, bg = self.colors.color11, ctermfg = 15, ctermbg = 11 })
 	set_hl("CurSearch", { link = "IncSearch" })
 	set_hl("SpecialKey", { fg = self.colors.color0, ctermfg = 0 })
-	set_hl("SpellBad", { underline = true, fg = self.colors.color1, ctermfg = 1 })
-	set_hl("SpellCap", { underline = true, fg = self.colors.color2, ctermfg = 2 })
-	set_hl("SpellLocal", { underline = true, fg = self.colors.color3, ctermfg = 3 })
-	set_hl("SpellRare", { underline = true, fg = self.colors.color4, ctermfg = 4 })
+	set_hl("SpellBad", { underline = allow_underline, fg = self.colors.color1, ctermfg = 1 })
+	set_hl("SpellCap", { underline = allow_underline, fg = self.colors.color2, ctermfg = 2 })
+	set_hl("SpellLocal", { underline = allow_underline, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("SpellRare", { underline = allow_underline, fg = self.colors.color4, ctermfg = 4 })
 	set_hl("StatusLine", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("StatusLineNC", { fg = self.colors.color8, bg = self.colors.color0, ctermfg = 8, ctermbg = 0 })
 	set_hl(
 		"StatusLineNormal",
-		{ bold = true, fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 }
+		{ bold = allow_bold, fg = self.colors.color15, bg = self.colors.color1, ctermfg = 15, ctermbg = 1 }
 	)
 	set_hl("StatusLineInsert", { link = "StatusLineNormal", bg = self.colors.color2, ctermbg = 2 })
 	set_hl("StatusLineVisual", { link = "StatusLineNormal", bg = self.colors.color3, ctermbg = 3 })
@@ -170,7 +184,7 @@ function Theme:apply(path)
 	set_hl("TabLine", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("TabLineFill", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("TabLineSel", { fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
-	set_hl("Title", { bold = true, fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
+	set_hl("Title", { bold = allow_bold, fg = self.colors.color15, bg = self.colors.color0, ctermfg = 15, ctermbg = 0 })
 	set_hl("Visual", { fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
 	set_hl("VisualNOS", { fg = self.colors.color0, bg = self.colors.color8, ctermfg = 0, ctermbg = 8 })
 	set_hl("WarningMsg", { fg = self.colors.color15, bg = self.colors.color12, ctermfg = 15, ctermbg = 12 })
@@ -207,37 +221,37 @@ function Theme:apply(path)
 	set_hl("Variable", { fg = self.colors.color4, ctermfg = 4 })
 	set_hl("Value", { link = "String", italic = false })
 
-	set_hl("Boolean", { bold = true, fg = self.colors.color3, ctermfg = 3 })
-	set_hl("Bold", { link = "Normal", bold = true })
-	set_hl("Character", { italic = true, fg = self.colors.color12, ctermfg = 12 })
+	set_hl("Boolean", { bold = allow_bold, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("Bold", { link = "Normal", bold = allow_bold })
+	set_hl("Character", { italic = allow_italic, fg = self.colors.color12, ctermfg = 12 })
 	set_hl("Constant", { fg = self.colors.color5, ctermfg = 5 })
 	set_hl("Constructor", { fg = self.colors.color2, ctermfg = 2 })
-	set_hl("Debug", { bold = true, fg = self.colors.color5, ctermfg = 5 })
+	set_hl("Debug", { bold = allow_bold, fg = self.colors.color5, ctermfg = 5 })
 	set_hl("Delimiter", { fg = self.colors.color15, ctermfg = 15 })
-	set_hl("Define", { bold = true, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("Define", { bold = allow_bold, fg = self.colors.color3, ctermfg = 3 })
 	set_hl("Error", { fg = self.colors.color9, ctermfg = 9 })
 	set_hl("Exception", { fg = self.colors.color9, ctermfg = 9 })
-	set_hl("Function", { bold = true, fg = self.colors.color2, ctermfg = 2 })
+	set_hl("Function", { bold = allow_bold, fg = self.colors.color2, ctermfg = 2 })
 	set_hl("Identifier", { fg = self.colors.color14, ctermfg = 14 })
-	set_hl("Italic", { link = "Normal", italic = true })
-	set_hl("Include", { bold = true, fg = self.colors.color10, ctermfg = 10 })
-	set_hl("Keyword", { bold = true, fg = self.colors.color2, ctermfg = 2 })
+	set_hl("Italic", { link = "Normal", italic = allow_italic })
+	set_hl("Include", { bold = allow_bold, fg = self.colors.color10, ctermfg = 10 })
+	set_hl("Keyword", { bold = allow_bold, fg = self.colors.color2, ctermfg = 2 })
 	set_hl("Label", { fg = self.colors.color12, ctermfg = 12 })
 	set_hl("Macro", { fg = self.colors.color2, ctermfg = 2 })
-	set_hl("Operator", { link = "Normal", bold = true })
+	set_hl("Operator", { link = "Normal", bold = allow_bold })
 	set_hl("PreProc", { fg = self.colors.color1, ctermfg = 1 })
 	set_hl("Property", { fg = self.colors.color13, ctermfg = 13 })
-	set_hl("Repeat", { bold = true, fg = self.colors.color10, ctermfg = 10 })
-	set_hl("SpecialChar", { bold = true, fg = self.colors.color12, ctermfg = 12 })
+	set_hl("Repeat", { bold = allow_bold, fg = self.colors.color10, ctermfg = 10 })
+	set_hl("SpecialChar", { bold = allow_bold, fg = self.colors.color12, ctermfg = 12 })
 	set_hl("Special", { fg = self.colors.color6, ctermfg = 6 })
 	set_hl("Statement", { fg = self.colors.color2, ctermfg = 2 })
 	set_hl("StorageClass", { fg = self.colors.color3, ctermfg = 3 })
-	set_hl("String", { italic = true, fg = self.colors.color4, ctermfg = 4 })
-	set_hl("Structure", { bold = true, fg = self.colors.color3, ctermfg = 3 })
-	set_hl("Todo", { bold = true, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
+	set_hl("String", { italic = allow_italic, fg = self.colors.color4, ctermfg = 4 })
+	set_hl("Structure", { bold = allow_bold, fg = self.colors.color3, ctermfg = 3 })
+	set_hl("Todo", { bold = allow_bold, fg = self.colors.color0, bg = self.colors.color15, ctermfg = 0, ctermbg = 15 })
 	set_hl("Type", { fg = self.colors.color13, ctermfg = 13 })
 	set_hl("Typedef", { fg = self.colors.color13, ctermfg = 13 })
-	set_hl("Underlined", { link = "Normal", underline = true })
+	set_hl("Underlined", { link = "Normal", underline = allow_underline })
 
 	set_hl("DiagnosticError", { link = "Error" })
 	set_hl("DiagnosticWarn", { link = "WarningMsg" })
@@ -260,8 +274,8 @@ function Theme:apply(path)
 	set_hl("diffAdded", { link = "DiffAdd" })
 	set_hl("diffRemoved", { link = "DiffDelete" })
 	set_hl("diffChanged", { link = "DiffChange" })
-	set_hl("diffOldFile", { link = "DiffChange", italic = true })
-	set_hl("diffNewFile", { link = "DiffChange", bold = true })
+	set_hl("diffOldFile", { link = "DiffChange", italic = allow_italic })
+	set_hl("diffNewFile", { link = "DiffChange", bold = allow_bold })
 	set_hl("diffFile", { link = "Comment" })
 	set_hl("diffLine", { link = "Comment" })
 	set_hl("diffIndexLine", { link = "DiffChange", fg = self.colors.color4, ctermfg = 4 })
@@ -271,9 +285,9 @@ function Theme:apply(path)
 	set_hl("CmpDocumentation", { link = "FloatBorder" })
 	set_hl("CmpGhostText", { link = "Conceal" })
 	set_hl("CmpItemAbbr", { link = "Float" })
-	set_hl("CmpItemAbbrDeprecated", { link = "Float", strikethrough = true })
-	set_hl("CmpItemAbbrMatch", { link = "Float", bold = true })
-	set_hl("CmpItemAbbrMatchFuzzy", { link = "Float", bold = true })
+	set_hl("CmpItemAbbrDeprecated", { link = "Float", strikethrough = allow_strikethrough })
+	set_hl("CmpItemAbbrMatch", { link = "Float", bold = allow_bold })
+	set_hl("CmpItemAbbrMatchFuzzy", { link = "Float", bold = allow_bold })
 	set_hl("CmpItemKindDefault", { link = "Float" })
 	set_hl("CmpItemMenu", { link = "Float" })
 
@@ -288,8 +302,8 @@ function Theme:apply(path)
 	set_hl("IblIndent", { link = "IndentBlankLineChar", nocombine = true })
 	set_hl("IblScope", { link = "IndentBlankLineContextChar", nocombine = true })
 
-	set_hl("LazyProgressDone", { link = "Float", bold = true })
-	set_hl("LazyProgressTodo", { link = "Float", bold = true })
+	set_hl("LazyProgressDone", { link = "Float", bold = allow_bold })
+	set_hl("LazyProgressTodo", { link = "Float", bold = allow_bold })
 
 	set_hl("TreesitterContext", { link = "Comment" })
 	set_hl("TreesitterContextBottom", { link = "Comment" })

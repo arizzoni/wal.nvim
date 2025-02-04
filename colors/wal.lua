@@ -8,13 +8,20 @@ if not vim.g.wal_path then
 	vim.g.wal_path = vim.fn.expand("~/.cache/wal/colors/json")
 end
 
-theme:apply(vim.g.wal_path)
+local opts = {
+	bold = true,
+	italic = true,
+	underline = true,
+	strikethrough = true,
+}
+
+theme:apply(vim.g.wal_path, opts)
 
 local file_watcher
 -- callback = function(err, filename, events)
 callback = function()
 	file_watcher:stop()
-	theme:apply(vim.g.wal_path)
+	theme:apply(vim.g.wal_path, opts)
 	file_watcher:start()
 end
 
