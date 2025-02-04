@@ -20,7 +20,7 @@ the file changes. Neovim's built in highlighting functions are used so there
 are no dependencies and wherever possible the use of legacy vimscript functions
 has been minimized.
 
-## Inspiration and Referenced Works
+### Inspiration and Referenced Works
 I am extremely grateful to the open source community for their help in writing
 this plugin. I referenced several other projects during this work, and I would
 like to give lots of credit to where it is due. This plugin was inspired by
@@ -33,15 +33,12 @@ the great work done on the following projects:
 - [dylanaraps/pywal](https://github.com/dylanaraps/pywal)
 - [zenbones-theme/zenbones.nvim](https://github.com/zenbones-theme/zenbones.nvim)
 
-## Installation (lazy.nvim)
+### Installation (lazy.nvim)
 ```Lua
 return {
 	url = "https://www.github.com/arizzoni/wal.nvim",
-	init = function()
+	config = function()
 		vim.g.wal_path = "/path/to/colors.json"
 	end,
 }
 ```
-
-## Todo
-- [ ] Add more highlights, tune colors

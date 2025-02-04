@@ -4,24 +4,17 @@ local theme = require("wal.theme")
 vim.g.colors_name = "wal"
 vim.opt.background = "dark"
 
-if not vim.g.wal_path then
-	vim.g.wal_path = vim.fn.expand("~/.cache/wal/colors/json")
-end
-
-local opts = {
-	bold = true,
-	italic = true,
-	underline = true,
-	strikethrough = true,
-}
-
-theme:apply(vim.g.wal_path, opts)
+theme.new(vim.g.wal_path)
+theme:load_colors()
+theme:generate()
+theme:apply()
 
 local file_watcher
--- callback = function(err, filename, events)
-callback = function()
+local callback = function()
 	file_watcher:stop()
-	theme:apply(vim.g.wal_path, opts)
+	theme:load_colors()
+	theme:generate()
+	theme:apply()
 	file_watcher:start()
 end
 
