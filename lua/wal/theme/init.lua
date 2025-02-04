@@ -25,6 +25,9 @@ function Theme:load_colors()
 				local wal = vim.json.decode(raw_json)
 				if wal then
 					self.colors = wal.colors
+					self.colors.background = wal.special.background
+					self.colors.foreground = wal.special.foreground
+					self.colors.cursor = wal.special.cursor
 				else
 					vim.notify("Wal.nvim Error: Could not decode json data in " .. self.path, vim.log.levels.ERROR)
 					return false
@@ -102,7 +105,7 @@ function Theme:generate()
 	set_hl("MsgArea", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("MoreMsg", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("NonText", { ctermfg = 8 })
-	set_hl("Normal", { fg = self.colors.color15, ctermfg = 15 })
+	set_hl("Normal", { fg = self.colors.color15, bg = self.colors.background, ctermfg = 15, ctermbg = 0 })
 	set_hl("NormalNC", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("NormalSB", { fg = self.colors.color15, ctermfg = 15 })
 	set_hl("NormalFloat", { fg = self.colors.color15, ctermfg = 15 })
