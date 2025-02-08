@@ -1,3 +1,5 @@
+--[[ wal.nvim/colors/wal.lua ]]
+
 local watch = require("wal.watch")
 local theme = require("wal.theme")
 
@@ -7,14 +9,14 @@ vim.opt.background = "dark"
 theme.new(vim.g.wal_path)
 theme:load_colors()
 theme:generate()
-theme:apply()
+theme:apply(0)
 
 local file_watcher
 local callback = function()
 	file_watcher:stop()
 	theme:load_colors()
 	theme:generate()
-	theme:apply()
+	theme:apply(0)
 	file_watcher:start()
 end
 
