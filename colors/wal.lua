@@ -1,4 +1,4 @@
---[[ wal.nvim/colors/wal.lua ]]
+-- wal.nvim/colors/wal.lua
 
 local watch = require("wal.watch")
 local theme = require("wal.theme")

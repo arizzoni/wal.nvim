@@ -1,14 +1,14 @@
---[[ wal.nvim/lua/wal/theme.lua ]]
+-- wal.nvim/lua/wal/theme.lua
 
 local json = vim.json
 local log = vim.log
 local uv = vim.uv
 
----@class Theme
----@field path string
----@field ns_id number
----@field termguicolors boolean
----@field colors table
+--- @class Theme
+--- @field path string
+--- @field ns_id number
+--- @field termguicolors boolean
+--- @field colors table
 local Theme = {}
 
 Theme.path = vim.g.wal_path
@@ -16,8 +16,8 @@ Theme.ns_id = 0
 Theme.termguicolors = false
 Theme.colors = {}
 
----@param path string
----@return self
+--- @param path string
+--- @return self
 function Theme.new(path)
 	local self = setmetatable({}, Theme)
 	self.__index = Theme
@@ -27,7 +27,7 @@ function Theme.new(path)
 	return self
 end
 
----@return boolean success
+--- @return boolean success
 function Theme:load_colors()
 	local fd = uv.fs_open(self.path, "r", 438)
 	if fd then
@@ -39,44 +39,45 @@ function Theme:load_colors()
 				local wal = json.decode(raw_json)
 				if wal then
 					self.colors = wal.colors
-					self.colors.background = wal.special.background
-					self.colors.foreground = wal.special.foreground
+					-- self.colors.background = wal.special.background
+					-- self.colors.foreground = wal.special.foreground
+					self.colors.background = wal.colors.color0
+					self.colors.foreground = wal.colors.color15
 					self.colors.cursor = wal.special.cursor
 				else
-					vim.notify("Wal.nvim Error: Could not decode json data in " .. self.path, log.levels.ERROR)
+					vim.notify("Error: wal.nvim unable to decode json data in " .. self.path, log.levels.ERROR)
 					return false
 				end
 			else
-				vim.notify("Wal.nvim Error: Could not close " .. self.path, log.levels.ERROR)
+				vim.notify("Error: wal.nvim unable to close " .. self.path, log.levels.ERROR)
 				return false
 			end
 		else
-			vim.notify("Wal.nvim Error: Could not read " .. self.path, log.levels.ERROR)
+			vim.notify("Error: wal.nvim unable to read " .. self.path, log.levels.ERROR)
 			return false
 		end
 	else
-		vim.notify("Wal.nvim Error: Could not open " .. self.path, log.levels.ERROR)
+		vim.notify("Error: wal.nvim unable to open " .. self.path, log.levels.ERROR)
 		return false
 	end
 	return true
 end
 
----@return boolean success
+--- @return boolean success
 function Theme:generate()
-	if not self.colors.color15 then
-		-- Load colors if it hasn't been done yet
+	if not self.colors then
 		self:load_colors()
 	end
 
-	---@param group string
-	---@param options table
-	---@return boolean success
+	--- @param group string
+	--- @param options table
+	--- @return boolean success
 	local function set_hl(group, options)
 		-- set_hl("HighlightGroup", {
 		-- 	fg = self.colors.colorN,
 		-- 	bg = self.colors.colorN,
 		-- 	sp = self.colors.colorN,
-		-- 	blend = {Integer from 0 to 100},
+		-- 	blend = {Integer(0-100)},
 		-- 	bold = {Boolean},
 		-- 	underline = {Boolean},
 		-- 	undercurl = {Boolean}, -- Falls back to underline if unavailable
@@ -89,10 +90,10 @@ function Theme:generate()
 		-- 	standout = {Boolean},
 		-- 	altfont = {Boolean},
 		-- 	nocombine = {Boolean},
-		-- 	link = {string(HighlightGroup)}
+		-- 	link = {String(HighlightGroup)}
 		-- 	default = {Boolean}
-		-- 	ctermfg = 15,
-		-- 	ctermbg = 8,
+		-- 	ctermfg = {Integer},
+		-- 	ctermbg = {Integer},
 		-- 	-- override above styles for cterm environments:
 		-- 	cterm = "bold,underline|undercurl|underdouble|underdotted|underdashed,
 		-- 	         strikethrough,reverse|inverse,italic,standout,altfont,nocombine,
@@ -108,35 +109,51 @@ function Theme:generate()
 
 	set_hl("Normal", {
 		fg = self.colors.foreground,
-		bg = self.colors.background,
-		sp = self.colors.foregound,
 		ctermfg = 15,
-		ctermbg = 0,
+	})
+
+	set_hl("Underlined", {
+		underline = true,
+		link = "Normal",
+	})
+
+	set_hl("Bold", {
+		bold = true,
+		link = "Normal",
+	})
+
+	set_hl("Italic", {
+		italic = true,
+	})
+
+	set_hl("Error", {
+		fg = self.colors.color9,
+		ctermfg = 9,
+	})
+
+	set_hl("ErrorMsg", {
+		fg = self.colors.color15,
+		ctermfg = 15,
+	})
+
+	set_hl("WarningMsg", {
+		fg = self.colors.color15,
+		bg = self.colors.color12,
+		ctermfg = 15,
+		ctermbg = 12,
 	})
 
 	set_hl("Comment", {
 		fg = self.colors.color5,
-		bg = self.colors.background,
 		sp = self.colors.color5,
 		italic = true,
 		ctermfg = 5,
-		ctermbg = 0,
-	})
-
-	set_hl("ColorColumn", {
-		fg = self.colors.foreground,
-		bg = self.colors.color8,
-		sp = self.colors.foreground,
-		ctermfg = 15,
-		ctermbg = 8,
 	})
 
 	set_hl("Conceal", {
 		fg = self.colors.background,
-		bg = self.colors.background,
 		sp = self.colors.background,
 		ctermfg = 0,
-		ctermbg = 0,
 	})
 
 	set_hl("Cursor", {
@@ -167,27 +184,22 @@ function Theme:generate()
 		link = "CursorNC",
 	})
 
-	set_hl("CursorColumn", {
-		bg = self.colors.color8,
-		ctermbg = 8,
-	})
-
 	set_hl("CursorLine", {
 		bg = self.colors.color8,
 		ctermbg = 8,
 	})
 
-	set_hl("CursorLineNr", {
-		fg = self.colors.color8,
-		bg = self.colors.color0,
-		bold = true,
-		ctermfg = 8,
-		ctermbg = 0,
+	set_hl("CursorColumn", {
+		bg = self.colors.color8,
+		ctermbg = 8,
 	})
 
-	set_hl("Directory", {
-		fg = self.colors.color4,
-		ctermfg = 4,
+	set_hl("ColorColumn", {
+		fg = self.colors.foreground,
+		bg = self.colors.color8,
+		sp = self.colors.foreground,
+		ctermfg = 15,
+		ctermbg = 8,
 	})
 
 	set_hl("DiffAdd", {
@@ -210,24 +222,35 @@ function Theme:generate()
 		ctermbg = 8,
 	})
 
-	set_hl("EndOfBuffer", {
-		bg = self.colors.background,
-		ctermbg = 0,
-	})
-
-	set_hl("ErrorMsg", {
-		fg = self.colors.color15,
-		ctermfg = 15,
-	})
-
-	set_hl("VertSplit", {
+	set_hl("LineNr", {
 		fg = self.colors.color8,
-		bg = self.colors.background,
+		bg = self.colors.color0,
+		bold = false,
 		ctermfg = 8,
 		ctermbg = 0,
 	})
 
-	set_hl("WinSeparator", {
+	set_hl("LineNrAbove", {
+		fg = self.colors.color8,
+		bold = false,
+		ctermfg = 8,
+	})
+
+	set_hl("LineNrBelow", {
+		link = "LineNrAbove",
+	})
+
+	set_hl("SignColumn", {
+		fg = self.colors.color8,
+		ctermfg = 8,
+	})
+
+	set_hl("SignColumnSB", {
+		fg = self.colors.color8,
+		ctermfg = 8,
+	})
+
+	set_hl("FoldColumn", {
 		fg = self.colors.color8,
 		bg = self.colors.color0,
 		ctermfg = 8,
@@ -241,85 +264,31 @@ function Theme:generate()
 		ctermbg = 0,
 	})
 
-	set_hl("FoldColumn", {
+	set_hl("CursorLineNr", {
 		fg = self.colors.color8,
 		bg = self.colors.color0,
+		bold = true,
 		ctermfg = 8,
 		ctermbg = 0,
 	})
 
-	set_hl("SignColumn", {
-		fg = self.colors.color8,
-		ctermfg = 8,
-	})
-
-	set_hl("SignColumnSB", {
-		fg = self.colors.color8,
-		ctermfg = 8,
-	})
-
-	set_hl("Substitute", {
-		fg = self.colors.color9,
-		bg = self.colors.color1,
-		ctermfg = 9,
-		ctermbg = 1,
-	})
-
-	set_hl("LineNr", {
-		fg = self.colors.color15,
-		bold = true,
-		ctermfg = 15,
-	})
-
-	set_hl("LineNrAbove", {
-		fg = self.colors.color8,
-		bold = true,
-		ctermfg = 8,
-	})
-
-	set_hl("LineNrBelow", {
-		link = "LineNrAbove",
-	})
-
-	set_hl("MatchParen", {
-		link = "Cursor",
-	})
-
 	set_hl("ModeMsg", {
-		fg = self.colors.color15,
-		ctermfg = 15,
+		link = "Normal",
 	})
 
 	set_hl("MsgArea", {
-		fg = self.colors.color15,
-		ctermfg = 15,
+		link = "Normal",
+	})
+
+	set_hl("MsgSeparator", {
+		link = "Normal",
 	})
 
 	set_hl("MoreMsg", {
-		fg = self.colors.color15,
-		ctermfg = 15,
-	})
-
-	set_hl("NonText", {
-		ctermfg = 8,
-	})
-
-	set_hl("NormalNC", {
-		fg = self.colors.color15,
-		ctermfg = 15,
-	})
-
-	set_hl("NormalSB", {
-		fg = self.colors.color15,
-		ctermfg = 15,
+		link = "Normal",
 	})
 
 	set_hl("NormalFloat", {
-		fg = self.colors.color15,
-		ctermfg = 15,
-	})
-
-	set_hl("Float", {
 		fg = self.colors.color15,
 		ctermfg = 15,
 	})
@@ -340,15 +309,16 @@ function Theme:generate()
 		ctermbg = 8,
 	})
 
-	set_hl("Pmenu", {
+	set_hl("FloatFooter", {
 		fg = self.colors.color15,
-		bg = self.colors.color0,
+		bg = self.colors.color8,
+		bold = true,
 		ctermfg = 15,
-		ctermbg = 0,
+		ctermbg = 8,
 	})
 
-	set_hl("PmenuMatch", {
-		fg = self.colors.color15,
+	set_hl("Pmenu", {
+		fg = self.colors.foreground,
 		bg = self.colors.color8,
 		ctermfg = 15,
 		ctermbg = 8,
@@ -358,32 +328,12 @@ function Theme:generate()
 		bold = true,
 	})
 
-	set_hl("PmenuMatchSel", {
-		bg = self.colors.color8,
-		bold = true,
-		ctermbg = 8,
-	})
-
 	set_hl("PmenuSbar", {
 		link = "PmenuSel",
 	})
 
 	set_hl("PmenuThumb", {
 		link = "Normal",
-	})
-
-	set_hl("Question", {
-		fg = self.colors.color9,
-		bg = self.colors.color0,
-		ctermfg = 9,
-		ctermbg = 0,
-	})
-
-	set_hl("QuickFixLine", {
-		fg = self.colors.color10,
-		bg = self.colors.color0,
-		ctermfg = 10,
-		ctermbg = 0,
 	})
 
 	set_hl("Search", {
@@ -400,13 +350,26 @@ function Theme:generate()
 		ctermbg = 11,
 	})
 
-	set_hl("CurSearch", {
-		link = "IncSearch",
+	set_hl("Substitute", {
+		fg = self.colors.color9,
+		bg = self.colors.color1,
+		ctermfg = 9,
+		ctermbg = 1,
 	})
 
-	set_hl("SpecialKey", {
-		fg = self.colors.color0,
-		ctermfg = 0,
+	set_hl("MatchParen", {
+		link = "Cursor",
+	})
+
+	set_hl("QuickFixLine", {
+		fg = self.colors.color10,
+		bg = self.colors.color0,
+		ctermfg = 10,
+		ctermbg = 0,
+	})
+
+	set_hl("CurSearch", {
+		link = "IncSearch",
 	})
 
 	set_hl("SpellBad", {
@@ -445,129 +408,6 @@ function Theme:generate()
 		ctermbg = 0,
 	})
 
-	set_hl("StatusLineNormal", {
-		fg = self.colors.color15,
-		bg = self.colors.color1,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 1,
-	})
-
-	set_hl("StatusLineInsert", {
-		fg = self.colors.color15,
-		bg = self.colors.color2,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 2,
-	})
-
-	set_hl("StatusLineVisual", {
-		fg = self.colors.color15,
-		bg = self.colors.color3,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 3,
-	})
-
-	set_hl("StatusLineCommand", {
-		fg = self.colors.color15,
-		bg = self.colors.color4,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 4,
-	})
-
-	set_hl("StatusLineReplace", {
-		fg = self.colors.color15,
-		bg = self.colors.color5,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 5,
-	})
-
-	set_hl("StatusLineSelect", {
-		fg = self.colors.color15,
-		bg = self.colors.color6,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 6,
-	})
-
-	set_hl("StatusLineTerminal", {
-		fg = self.colors.color15,
-		bg = self.colors.color8,
-		bold = true,
-		ctermfg = 15,
-		ctermbg = 8,
-	})
-
-	set_hl("StatusLineDiagnostics", {
-		fg = self.colors.color15,
-		bg = self.colors.color0,
-		ctermfg = 15,
-		ctermbg = 0,
-	})
-
-	set_hl("StatusLineFilepath", {
-		fg = self.colors.color12,
-		ctermfg = 12,
-	})
-
-	set_hl("StatusLineLSP", {
-		fg = self.colors.color8,
-		ctermfg = 8,
-	})
-
-	set_hl("StatusLineFileInfo", {
-		fg = self.colors.color8,
-		ctermfg = 8,
-	})
-
-	set_hl("StatusLineModified", {
-		fg = self.colors.color8,
-		ctermfg = 8,
-	})
-
-	set_hl("StatusLineVersionControl", {
-		fg = self.colors.color5,
-		ctermfg = 5,
-	})
-
-	set_hl("StatusLineCursorPos", {
-		fg = self.colors.color15,
-		bg = self.colors.color1,
-		ctermfg = 15,
-		ctermbg = 1,
-	})
-
-	set_hl("TabLineCurrentTab", {
-		fg = self.colors.color15,
-		bg = self.colors.color1,
-		ctermfg = 15,
-		ctermbg = 1,
-	})
-
-	set_hl("TabLineTabs", {
-		fg = self.colors.color15,
-		bg = self.colors.color2,
-		ctermfg = 15,
-		ctermbg = 2,
-	})
-
-	set_hl("TabLineCurrentBuf", {
-		fg = self.colors.color15,
-		bg = self.colors.color3,
-		ctermfg = 15,
-		ctermbg = 3,
-	})
-
-	set_hl("TabLineBufs", {
-		fg = self.colors.color15,
-		bg = self.colors.color4,
-		ctermfg = 15,
-		ctermbg = 4,
-	})
-
 	set_hl("TabLine", {
 		fg = self.colors.color15,
 		ctermfg = 15,
@@ -580,16 +420,32 @@ function Theme:generate()
 
 	set_hl("TabLineSel", {
 		fg = self.colors.color15,
-		bg = self.colors.color0,
 		ctermfg = 15,
+	})
+
+	set_hl("WinBar", {
+		fg = self.colors.color15,
+		ctermfg = 15,
+	})
+
+	set_hl("WinBarNC", {
+		fg = self.colors.color15,
+		bg = self.colors.color8,
+		ctermfg = 15,
+		ctermbg = 8,
+	})
+
+	set_hl("WinSeparator", {
+		fg = self.colors.color8,
+		bg = self.colors.background,
+		ctermfg = 8,
 		ctermbg = 0,
 	})
 
-	set_hl("Title", {
-		fg = self.colors.color15,
-		bg = self.colors.color0,
-		bold = true,
-		ctermfg = 15,
+	set_hl("VertSplit", {
+		fg = self.colors.color8,
+		bg = self.colors.background,
+		ctermfg = 8,
 		ctermbg = 0,
 	})
 
@@ -607,11 +463,13 @@ function Theme:generate()
 		ctermbg = 8,
 	})
 
-	set_hl("WarningMsg", {
-		fg = self.colors.color15,
-		bg = self.colors.color12,
-		ctermfg = 15,
-		ctermbg = 12,
+	set_hl("NonText", {
+		ctermfg = 8,
+	})
+
+	set_hl("SpecialKey", {
+		fg = self.colors.color0,
+		ctermfg = 0,
 	})
 
 	set_hl("Whitespace", {
@@ -619,27 +477,104 @@ function Theme:generate()
 		ctermfg = 15,
 	})
 
+	set_hl("EndOfBuffer", {
+		bg = self.colors.color0,
+		ctermbg = 0,
+	})
+
 	set_hl("WildMenu", {
 		fg = self.colors.color15,
 		ctermfg = 15,
 	})
 
-	set_hl("WinBar", {
-		fg = self.colors.color15,
+	set_hl("Directory", {
+		fg = self.colors.color4,
+		ctermfg = 4,
+	})
+
+	set_hl("Question", {
+		fg = self.colors.color9,
 		bg = self.colors.color0,
-		ctermfg = 15,
+		ctermfg = 9,
 		ctermbg = 0,
 	})
 
-	set_hl("WinBarNC", {
+	set_hl("Title", {
+		fg = self.colors.color15,
+		bold = true,
+		ctermfg = 15,
+	})
+
+	-------------------------------------------------------------------------------------
+
+	set_hl("User1", {
+		fg = self.colors.color15,
+		bg = self.colors.color1,
+		bold = true,
+		ctermfg = 15,
+		ctermbg = 1,
+	})
+
+	set_hl("User2", {
+		fg = self.colors.color15,
+		bg = self.colors.color2,
+		bold = true,
+		ctermfg = 15,
+		ctermbg = 2,
+	})
+
+	set_hl("User3", {
+		fg = self.colors.color15,
+		bg = self.colors.color3,
+		bold = true,
+		ctermfg = 15,
+		ctermbg = 3,
+	})
+
+	set_hl("User4", {
+		fg = self.colors.color15,
+		bg = self.colors.color4,
+		bold = true,
+		ctermfg = 15,
+		ctermbg = 4,
+	})
+
+	set_hl("User5", {
+		fg = self.colors.color15,
+		bg = self.colors.color5,
+		bold = true,
+		ctermfg = 15,
+		ctermbg = 5,
+	})
+
+	set_hl("User6", {
+		fg = self.colors.color15,
+		bg = self.colors.color6,
+		bold = true,
+		ctermfg = 15,
+		ctermbg = 6,
+	})
+
+	set_hl("User7", {
+		fg = self.colors.color12,
+		ctermfg = 12,
+	})
+
+	set_hl("User8", {
 		fg = self.colors.color15,
 		bg = self.colors.color8,
+		bold = true,
 		ctermfg = 15,
 		ctermbg = 8,
 	})
 
+	set_hl("User9", {
+		fg = self.colors.color15,
+		ctermfg = 15,
+	})
+
 	set_hl("Array", {
-		link = "Float",
+		link = "Normal",
 	})
 
 	set_hl("Class", {
@@ -754,11 +689,6 @@ function Theme:generate()
 		ctermfg = 3,
 	})
 
-	set_hl("Bold", {
-		bold = true,
-		link = "Normal",
-	})
-
 	set_hl("Character", {
 		fg = self.colors.color12,
 		italic = true,
@@ -792,11 +722,6 @@ function Theme:generate()
 		ctermfg = 3,
 	})
 
-	set_hl("Error", {
-		fg = self.colors.color9,
-		ctermfg = 9,
-	})
-
 	set_hl("Exception", {
 		fg = self.colors.color9,
 		ctermfg = 9,
@@ -811,10 +736,6 @@ function Theme:generate()
 	set_hl("Identifier", {
 		fg = self.colors.color14,
 		ctermfg = 14,
-	})
-
-	set_hl("Italic", {
-		italic = true,
 	})
 
 	set_hl("Include", {
@@ -897,6 +818,7 @@ function Theme:generate()
 		fg = self.colors.color0,
 		bg = self.colors.color15,
 		bold = true,
+		italic = true,
 		ctermfg = 0,
 		ctermbg = 15,
 	})
@@ -909,11 +831,6 @@ function Theme:generate()
 	set_hl("Typedef", {
 		fg = self.colors.color13,
 		ctermfg = 13,
-	})
-
-	set_hl("Underlined", {
-		underline = true,
-		link = "Normal",
 	})
 
 	set_hl("DiagnosticError", {
@@ -980,87 +897,8 @@ function Theme:generate()
 		link = "WarningMsg",
 	})
 
-	set_hl("diffAdded", {
-		link = "DiffAdd",
-	})
-
-	set_hl("diffRemoved", {
-		link = "DiffDelete",
-	})
-
-	set_hl("diffChanged", {
-		link = "DiffChange",
-	})
-
-	set_hl("diffOldFile", {
-		italic = true,
-		link = "DiffChange",
-	})
-
-	set_hl("diffNewFile", {
-		bold = true,
-		link = "DiffChange",
-	})
-
-	set_hl("diffFile", {
-		link = "Comment",
-	})
-
-	set_hl("diffLine", {
-		link = "Comment",
-	})
-
-	set_hl("diffIndexLine", {
-		fg = self.colors.color4,
-		link = "DiffChange",
-		ctermfg = 4,
-	})
-
 	set_hl("helpExample", {
 		link = "Comment",
-	})
-
-	set_hl("CmpDocumentation", {
-		link = "Float",
-	})
-
-	set_hl("CmpDocumentation", {
-		link = "FloatBorder",
-	})
-
-	set_hl("CmpGhostText", {
-		link = "Conceal",
-	})
-
-	set_hl("CmpItemAbbr", {
-		link = "Float",
-	})
-
-	set_hl("CmpItemAbbrDeprecated", {
-		strikethrough = true,
-		link = "Float",
-	})
-
-	set_hl("CmpItemAbbrMatch", {
-		bold = true,
-		link = "Float",
-	})
-
-	set_hl("CmpItemAbbrMatchFuzzy", {
-		bold = true,
-		link = "Float",
-	})
-
-	set_hl("CmpItemKindDefault", {
-		link = "Float",
-	})
-
-	set_hl("CmpItemMenu", {
-		link = "Float",
-	})
-
-	set_hl("DapStoppedLine", {
-		link = "WarningMsg",
 	})
 
 	set_hl("GitSignsAdd", {
@@ -1070,6 +908,7 @@ function Theme:generate()
 	set_hl("GitSignsChange", {
 		link = "DiffChange",
 	})
+
 	set_hl("GitSignsDelete", {
 		link = "DiffDelete",
 	})
@@ -1094,16 +933,6 @@ function Theme:generate()
 		link = "IndentBlankLineContextChar",
 	})
 
-	set_hl("LazyProgressDone", {
-		bold = true,
-		link = "Float",
-	})
-
-	set_hl("LazyProgressTodo", {
-		bold = true,
-		link = "Float",
-	})
-
 	set_hl("TreesitterContext", {
 		link = "Comment",
 	})
@@ -1122,30 +951,6 @@ function Theme:generate()
 
 	set_hl("TreesitterContextLineNumberBottom", {
 		link = "Comment",
-	})
-
-	set_hl("WhichKey", {
-		link = "Float",
-	})
-
-	set_hl("WhichKeyGroup", {
-		link = "Float",
-	})
-
-	set_hl("WhichKeyDesc", {
-		link = "Float",
-	})
-
-	set_hl("WhichKeySeparator", {
-		link = "Float",
-	})
-
-	set_hl("WhichKeyNormal", {
-		link = "Float",
-	})
-
-	set_hl("WhichKeyValue", {
-		link = "Float",
 	})
 
 	set_hl("@annotation", {
@@ -1741,8 +1546,8 @@ function Theme:generate()
 	return true
 end
 
----@param winnr number
----@return boolean success
+--- @param winnr number
+--- @return boolean success
 function Theme:apply(winnr)
 	vim.schedule(function()
 		if winnr then
@@ -1794,7 +1599,7 @@ function Theme:apply(winnr)
 	return true
 end
 
----@return table self.colors
+--- @return table self.colors
 function Theme:get_colors()
 	if not self.colors then
 		self:load_colors()
