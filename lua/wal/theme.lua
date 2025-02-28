@@ -39,10 +39,10 @@ function Theme:load_colors()
 				local wal = json.decode(raw_json)
 				if wal then
 					self.colors = wal.colors
-					-- self.colors.background = wal.special.background
-					-- self.colors.foreground = wal.special.foreground
-					self.colors.background = wal.colors.color0
-					self.colors.foreground = wal.colors.color15
+					self.colors.background = wal.special.background
+					self.colors.foreground = wal.special.foreground
+					-- self.colors.background = wal.colors.color0
+					-- self.colors.foreground = wal.colors.color15
 					self.colors.cursor = wal.special.cursor
 				else
 					vim.notify("Error: wal.nvim unable to decode json data in " .. self.path, log.levels.ERROR)
@@ -478,8 +478,8 @@ function Theme:generate()
 	})
 
 	set_hl("EndOfBuffer", {
-		bg = self.colors.color0,
-		ctermbg = 0,
+		-- bg = self.colors.color0,
+		-- ctermbg = 0,
 	})
 
 	set_hl("WildMenu", {
